@@ -1,0 +1,3320 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><meta name="robots" content="noindex,nofollow">
+<title>服薬確認 | 本番導入準備版</title>
+<script src="./config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<style>
+/* ---------- Base ---------- */
+:root {
+  --page: #f5f6f3;
+  --paper: #ffffff;
+  --ink: #26332f;
+  --muted: #64726c;
+  --line: #d9e0db;
+  --main: #286a5d;
+  --main-dark: #1b5147;
+  --main-soft: #eaf3ef;
+  --danger: #a33d36;
+  --danger-soft: #fff3f1;
+  --warning-soft: #fcf7ed;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--page);
+  font: 17px/1.65 -apple-system, BlinkMacSystemFont, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Yu Gothic', Meiryo, sans-serif;
+  letter-spacing: .01em;
+}
+button, input, select, textarea { font: inherit; }
+button { -webkit-tap-highlight-color: transparent; cursor: pointer; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #8dbaa8; outline-offset: 2px; }
+button:disabled { opacity: .46; cursor: not-allowed; }
+
+/* ---------- Header / progress ---------- */
+header {
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: auto;
+  padding: 21px 24px 17px;
+  max-width: 760px;
+}
+.brand { display: flex; flex-direction: column; line-height: 1.25; gap: 2px; }
+.brand-label { color: var(--main); font-weight: 700; font-size: 11px; letter-spacing: .15em; }
+.brand-name { font-size: 24px; font-weight: 750; letter-spacing: .035em; }
+#who { font-size: 14px; font-weight: 600; color: var(--muted); text-align: right; }
+.steps {
+  display: flex;
+  gap: 0;
+  max-width: 712px;
+  margin: 0 auto;
+  padding: 0 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.steps::-webkit-scrollbar { display: none; }
+.steps span {
+  position: relative;
+  flex: 1 0 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 13px 2px 12px;
+  border-bottom: 3px solid transparent;
+  color: #7b8881;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.steps span::before {
+  content: attr(data-number);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  border: 1px solid #c9d2cc;
+  border-radius: 50%;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: #748079;
+}
+.steps span.on { color: var(--main-dark); border-color: var(--main); }
+.steps span.on::before { color: #fff; background: var(--main); border-color: var(--main); }
+.steps span.done { color: #546c5e; }
+.steps span.done::before { color: var(--main); border-color: var(--main); }
+.steps span.history-step { flex: 0 0 auto; padding-left: 10px; padding-right: 10px; }
+.steps span.history-step::before { display: none; }
+
+/* ---------- Content ---------- */
+main { margin: 0 auto; max-width: 712px; padding: 27px 22px 68px; }
+h2 { font-size: clamp(24px, 5vw, 29px); font-weight: 750; line-height: 1.4; letter-spacing: -.035em; margin: 0 0 10px; }
+h3 { font-size: 17px; margin: 0 0 13px; font-weight: 700; }
+p { margin: 9px 0 14px; }
+.lead { color: var(--muted); font-size: 15px; line-height: 1.7; margin: 0 0 22px; }
+.section-label { display: block; margin: 0 0 8px; color: var(--main); font-size: 12px; font-weight: 750; letter-spacing: .1em; }
+.card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px 22px;
+  margin-bottom: 15px;
+}
+.card > b:first-child { font-weight: 700; }
+.card .hint:last-child { margin-bottom: 0; }
+.hint { color: var(--muted); font-size: 14px; line-height: 1.65; }
+.big { font-size: 27px; font-weight: 750; line-height: 1.45; letter-spacing: -.02em; }
+.detail { display: flex; flex-wrap: wrap; align-items: baseline; gap: 7px 19px; }
+.detail-item { display: inline-flex; align-items: baseline; gap: 8px; }
+.detail-item small { font-size: 13px; color: var(--muted); }
+.detail-item b { font-size: 17px; }
+
+/* ---------- Buttons / form controls ---------- */
+button, .btn {
+  display: block;
+  width: 100%;
+  min-height: 54px;
+  background: var(--paper);
+  border: 1px solid #c9d4cd;
+  border-radius: 9px;
+  color: var(--ink);
+  text-align: center;
+  padding: 13px 19px;
+  margin: 10px 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.45;
+  transition: background .12s, border-color .12s;
+}
+button:not(:disabled):active { background: #edf2ee; }
+button.pri, button.ok {
+  background: var(--main);
+  color: #fff;
+  border-color: var(--main);
+}
+button.pri:not(:disabled):active, button.ok:not(:disabled):active { background: var(--main-dark); }
+button.ng { color: var(--danger); border-color: #e4b7b2; background: #fff; }
+button.ng:not(:disabled):active { background: var(--danger-soft); }
+button.sel { border-color: var(--main); background: var(--main-soft); color: var(--main-dark); box-shadow: inset 0 0 0 1px var(--main); }
+button.sel.pri { color: #fff; background: var(--main); }
+button.staff-choice, button.rc {
+  display: flex; align-items: center; justify-content: space-between;
+  text-align: left; padding: 18px 20px; min-height: 72px; margin: 0 0 9px;
+}
+button.staff-choice::after, button.rc::after {
+  content: ''; display: block; width: 8px; height: 8px;
+  border-top: 2px solid #778b81; border-right: 2px solid #778b81;
+  transform: rotate(45deg); flex-shrink: 0; margin-left: 14px;
+}
+/* 職員欄：タップすると直下に一覧を展開 */
+.staff-field { margin: 0 0 22px; }
+.staff-field-label { display: block; font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 9px; }
+button.staff-dropdown-toggle {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  min-height: 64px; margin: 0; padding: 14px 17px;
+  border: 1px solid #b8c7be; background: #fff; text-align: left;
+  font-size: 17px; font-weight: 600; color: var(--muted);
+}
+button.staff-dropdown-toggle.has-value { color: var(--ink); }
+button.staff-dropdown-toggle[aria-expanded="true"] {
+  border-color: var(--main); border-radius: 9px 9px 0 0;
+  box-shadow: inset 0 0 0 1px var(--main);
+}
+.staff-chevron {
+  display: block; flex: 0 0 10px; width: 10px; height: 10px;
+  border-right: 2px solid var(--main); border-bottom: 2px solid var(--main);
+  transform: rotate(45deg); transition: transform .15s ease;
+  margin-right: 4px; margin-top: -5px;
+}
+button.staff-dropdown-toggle[aria-expanded="true"] .staff-chevron { transform: rotate(225deg); margin-top: 5px; }
+.staff-dropdown-list {
+  display: grid; background: #fff; border: 1px solid var(--main); border-top: none;
+  border-radius: 0 0 9px 9px;
+  max-height: 300px;  /* 4〜5名が見える高さで固定 */
+  overflow-y: auto;   /* 職員が多い場合は一覧の内側をスクロール */
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #8ba69b #edf2ef;
+}
+.staff-dropdown-list::-webkit-scrollbar { width: 9px; }
+.staff-dropdown-list::-webkit-scrollbar-track { background: #edf2ef; }
+.staff-dropdown-list::-webkit-scrollbar-thumb {
+  background: #8ba69b;
+  border-radius: 6px;
+  border: 2px solid #edf2ef;
+}
+.staff-dropdown-list[hidden] { display: none; }
+button.staff-option {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin: 0; padding: 13px 18px; min-height: 58px; border: 0;
+  border-bottom: 1px solid var(--line); border-radius: 0;
+  text-align: left; background: #fff; font-size: 17px; font-weight: 600;
+}
+button.staff-option:last-child { border-bottom: none; }
+button.staff-option.selected { background: var(--main-soft); color: var(--main-dark); }
+button.staff-option small { color: var(--main); font-size: 12px; font-weight: 650; }
+button.staff-option:not(:disabled):active { background: var(--main-soft); }
+button.rc { justify-content: flex-start; gap: 14px; }
+button.rc::after { margin-left: auto; }
+.rc img { width: 64px; height: 64px; flex: 0 0 64px; border-radius: 8px; border: 1px solid var(--line); object-fit: cover; }
+.rc .resident-name { font-size: 19px; font-weight: 750; display: block; }
+.rc .resident-info { font-size: 13px; font-weight: 500; color: var(--muted); display: block; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin: 12px 0 10px; }
+.grid button { margin: 0; min-height: 56px; }
+.row { display: flex; gap: 10px; }
+.row > * { flex: 1; min-width: 0; }
+#back:not(.ng) { background: transparent; border: 0; color: var(--muted); text-align: left; font-size: 14px; padding: 10px 0; margin-top: 18px; min-height: 42px; width: auto; }
+#hist, #n3 { margin-top: 17px; background: transparent; border-color: var(--line); font-size: 15px; }
+#stop { background: transparent; border-color: var(--line); color: var(--muted); font-size: 15px; }
+#rst { border: 1px solid #e7c4c1; background: #fff; color: var(--danger); font-size: 15px; }
+input, select, textarea {
+  display: block; width: 100%; min-height: 51px; background: #fff;
+  border: 1px solid #bdcac2; border-radius: 8px; padding: 11px 13px;
+  color: var(--ink); font-size: 16px;
+}
+input::placeholder, textarea::placeholder { color: #84928a; }
+input + button, textarea + button { margin-top: 12px; }
+select { cursor: pointer; }
+textarea { resize: vertical; min-height: 100px; }
+label.ack { display: flex; align-items: center; gap: 12px; padding: 14px 0 4px; font-weight: 700; font-size: 15px; }
+label.ack input { width: 21px; height: 21px; min-height: 0; flex-shrink: 0; accent-color: var(--main); }
+.photo { width: 132px; height: 132px; border-radius: 9px; object-fit: cover; border: 1px solid var(--line); margin-bottom: 8px; }
+.person-card { text-align: center; padding: 29px 20px; }
+.person-card .person-room { display: inline-block; margin-top: 14px; padding: 4px 15px; border-radius: 5px; background: var(--page); color: var(--muted); font-weight: 700; font-size: 14px; }
+
+/* ---------- QR / status ---------- */
+.qrguide {
+  background: var(--warning-soft);
+  border: 1px solid #eee1c8;
+  border-left: 3px solid #c9a367;
+  border-radius: 7px;
+  padding: 13px 16px;
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 14px 0 19px;
+}
+.qrguide b { color: #5f4c2c; }
+#cam { padding: 5px 0 12px; }
+#cam video, video { width: 100%; max-height: 56vh; display: block; object-fit: contain; background: #14211f; border-radius: 10px; }
+#qrphoto { font-size: 14px; padding: 10px; min-height: 53px; }
+.err { background: var(--danger-soft); border-left: 4px solid var(--danger); color: #832f2c; border-radius: 5px; padding: 12px 15px; margin: 14px 0; font-size: 15px; font-weight: 650; line-height: 1.7; overflow-wrap: anywhere; }
+.res { text-align: left; padding: 23px 23px 24px; border: 1px solid var(--line); border-left: 5px solid var(--main); background: #fff; border-radius: 9px; margin: 0 0 18px; }
+.res.ok { border-left-color: var(--main); }
+.res.ng { border-left-color: var(--danger); background: var(--danger-soft); border-top-color: #f0d6d3; border-right-color: #f0d6d3; border-bottom-color: #f0d6d3; }
+.res .result-label { font-size: 13px; font-weight: 750; color: var(--main); margin-bottom: 5px; }
+.res.ng .result-label { color: var(--danger); }
+.res .big { font-size: 27px; }
+.res .result-note { font-size: 15px; color: var(--muted); margin-top: 2px; }
+.res.ng .result-note { color: #89463e; }
+.chk { padding: 0; margin: 0; list-style: none; }
+.chk li { display: flex; align-items: flex-start; gap: 12px; padding: 14px 2px; font-size: 15px; font-weight: 600; border-bottom: 1px solid #e4e9e5; }
+.chk li:first-child { padding-top: 3px; }
+.chk li:last-child { border: 0; padding-bottom: 3px; }
+.chk li::before { content: '確認'; background: var(--main-soft); color: var(--main-dark); padding: 2px 7px; font-size: 11px; font-weight: 750; border-radius: 4px; flex: 0 0 auto; }
+.chk li.f::before { content: '注意'; color: var(--danger); background: #fbe6e3; }
+.chk li.f { color: #8f3630; }
+.warnbox { background: var(--danger-soft); color: #86332d; border: 1px solid #edccc7; border-left: 4px solid var(--danger); border-radius: 7px; padding: 15px 18px; font-weight: 700; font-size: 16px; margin-bottom: 15px; }
+.status-choice.sel.ok { background: var(--main-soft); color: var(--main-dark); border-color: var(--main); }
+.status-choice.sel.ng { background: var(--danger-soft); color: #8f3630; border-color: var(--danger); }
+.ov { position: fixed; inset: 0; background: rgb(19 34 30 / 57%); display: flex; align-items: center; justify-content: center; padding: 18px; z-index: 20; }
+.ov .card { width: 100%; max-width: 440px; margin: 0; box-shadow: 0 18px 60px rgb(0 0 0 / 13%); }
+
+/* ---------- Status overview ---------- */
+.status-toolbar { display: grid; gap: 17px; }
+.status-date-label { display: block; font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+.status-date-field { max-width: 235px; }
+.status-tabs { display: flex; flex-wrap: wrap; gap: 7px; }
+.status-tabs button {
+  flex: 1 1 90px; min-height: 43px; margin: 0; padding: 9px 8px;
+  font-size: 14px; font-weight: 700; border-radius: 7px;
+}
+.status-tabs button.active { background: var(--main); color: #fff; border-color: var(--main); }
+.status-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 18px 0; }
+.status-summary-item { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 15px 12px; min-width: 0; }
+.status-summary-item .status-count { display: block; font-size: 30px; line-height: 1.3; font-weight: 750; font-variant-numeric: tabular-nums; }
+.status-summary-item .status-count small { font-size: 12px; font-weight: 650; margin-left: 2px; }
+.status-summary-item .status-heading { display: block; color: var(--muted); font-size: 12px; font-weight: 700; margin-top: 3px; }
+.status-summary-item.completed .status-count { color: var(--main-dark); }
+.status-summary-item.alert .status-count { color: var(--danger); }
+.status-note { font-size: 13px; color: var(--muted); line-height: 1.7; margin: 6px 0 19px; }
+.status-group { padding: 0; overflow: hidden; }
+.status-group-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; background: #f7f9f7; padding: 14px 19px; border-bottom: 1px solid var(--line); }
+.status-group-head h3 { margin: 0; font-size: 17px; }
+.status-group-head small { color: var(--muted); font-size: 12px; font-weight: 650; }
+.status-entry { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 17px 19px; border-bottom: 1px solid var(--line); }
+.status-entry:last-child { border-bottom: 0; }
+.status-person { font-size: 16px; font-weight: 750; line-height: 1.4; }
+.status-room { font-size: 12px; color: var(--muted); font-weight: 500; margin-left: 8px; }
+.status-med { font-size: 14px; line-height: 1.5; margin-top: 6px; }
+.status-detail { color: var(--muted); font-size: 12px; margin-top: 4px; }
+.status-result { display: flex; align-items: flex-end; flex-direction: column; gap: 5px; flex: 0 0 auto; }
+.status-pill { white-space: nowrap; border-radius: 5px; padding: 5px 10px; font-size: 12px; font-weight: 750; }
+.status-pill.done { background: var(--main-soft); color: var(--main-dark); }
+.status-pill.pending { background: #eff1f0; color: #56635c; }
+.status-pill.attention { background: #fbe7e4; color: var(--danger); }
+.status-record-time { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.status-empty { background: #fff; border: 1px dashed #bdcac2; border-radius: 10px; padding: 26px 20px; text-align: center; color: var(--muted); font-size: 15px; }
+/* ---------- 訂正履歴 / 試作版のみ ---------- */
+.demo-global { padding: 7px 16px; background: #fcf7ed; border-bottom: 1px solid #e6d7b7; color: #745c31; font-size: 12px; font-weight: 700; text-align: center; }
+
+.demo-safety { background: #fcf7ed; border: 1px solid #dfcda6; border-left: 4px solid #ae8744; padding: 13px 16px; border-radius: 7px; margin: 12px 0 22px; font-size: 14px; line-height: 1.7; }
+.history-action { width: auto; min-height: 36px; display: inline-block; padding: 7px 10px; margin: 3px 4px 3px 0; border-radius: 6px; font-size: 13px; white-space: nowrap; }
+.history-revised { color: var(--main-dark); font-size: 12px; font-weight: 750; }
+.history-before { color: var(--muted); font-size: 12px; }
+.audit-items { margin: 15px 0; max-height: 42vh; overflow-y: auto; padding: 0 5px 0 0; }
+.audit-entry { padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.audit-entry:last-child { border-bottom: 0; }
+.audit-entry small { color: var(--muted); }
+.correction-modal { max-height: 88vh; overflow-y: auto; }
+.correction-modal label { display: block; font-size: 14px; font-weight: 700; margin: 12px 0 7px; }
+.correction-modal .lead { margin-bottom: 10px; }
+.correction-modal textarea { min-height: 105px; }
+/* ---------- Log ---------- */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 9px; background: #fff; margin-bottom: 17px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 570px; }
+th { color: var(--muted); font-size: 12px; font-weight: 750; background: #f4f7f4; }
+th, td { border-bottom: 1px solid var(--line); padding: 12px 13px; text-align: left; vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+tr.bad { color: var(--danger); background: var(--danger-soft); }
+tr.bad td { font-weight: 650; }
+.history-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.history-tools label { display: block; color: var(--muted); font-size: 12px; font-weight: 650; margin-bottom: 6px; }
+
+@media (max-width: 480px) {
+  body { font-size: 16px; }
+  .header-inner { padding: 18px 17px 14px; }
+  .brand-name { font-size: 22px; }
+  #who { font-size: 12px; }
+  .steps { padding: 0 6px; }
+  .steps span { flex-direction: column; gap: 3px; font-size: 11px; padding: 9px 0 8px; }
+  .steps span::before { width: 19px; height: 19px; flex-basis: 19px; }
+  main { padding: 24px 16px 55px; }
+  .card { padding: 17px 16px; }
+  button.staff-choice, button.rc { padding: 16px; }
+  .big, .res .big { font-size: 23px; }
+  .row { flex-direction: column; gap: 0; }
+  .history-tools { grid-template-columns: 1fr; }
+  .status-summary { gap: 7px; }
+  .status-summary-item { padding: 13px 9px; }
+  .status-summary-item .status-count { font-size: 27px; }
+  .status-summary-item .status-heading { font-size: 11px; }
+  .status-entry { padding: 15px 14px; }
+  .status-group-head { padding: 13px 14px; }
+  .status-person { font-size: 15px; }
+  .status-med { font-size: 13px; }
+  .status-pill { padding: 5px 8px; }
+
+}
+@media (prefers-reduced-motion: reduce) { button { transition: none; } }
+
+/* Supabase移行版 */
+.login-shell {max-width:500px; margin:20px auto}
+.login-shell .err {white-space:pre-line; overflow-wrap:anywhere;}
+.login-shell label {font-size:14px;font-weight:700;display:block;margin:12px 0 5px}
+.login-shell input {margin-bottom:8px}
+.info-panel {border:1px solid #d9e0db;background:#f7faf8;border-left:4px solid var(--main);border-radius:8px;padding:14px 16px;margin:13px 0;font-size:14px}
+.safety-panel {border:1px solid #ebd2aa;background:#fffaf0;border-left:4px solid #c59a4a;border-radius:8px;padding:13px 15px;margin:15px 0;font-size:14px}
+.toolbar {display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+.toolbar button {width:auto;flex:1;min-width:108px;margin:0;padding:10px 8px;min-height:46px;font-size:14px}
+.staff-roster {max-height:300px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--main) #e8ede8}
+.staff-roster::-webkit-scrollbar {width:9px}
+.staff-roster::-webkit-scrollbar-thumb {background:#80a69a;border-radius:9px}
+.staff-roster > div {padding:12px 17px;border-bottom:1px solid var(--line)}
+.staff-roster > div.current {color:var(--main-dark);background:var(--main-soft);font-weight:700}
+.muted {color:var(--muted)}
+.action-link {font-size:13px; min-height:38px; width:auto; padding:8px 12px; margin:4px 0}
+.err {white-space:pre-line}
+.small-link {display:inline-block; margin-top:8px;font-size:14px;color:var(--main)}
+.spin {display:inline-block;width:16px;height:16px;border:2px solid var(--line);border-top-color:var(--main);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
+@keyframes spin {to{transform:rotate(360deg)}}
+header .header-inner {align-items:center}
+#logout {min-height:34px;width:auto;margin:0;padding:6px 10px;font-size:12px}
+#who {max-width:170px;white-space:normal}
+@media (max-width:480px) {.header-inner{gap:9px} #who{font-size:11px} #logout{padding:6px}}
+
+/* 管理者向け・スマホ/PC共通の登録画面 */
+.admin-tabs { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; margin:13px 0 20px; }
+.admin-tabs button { margin:0; padding:10px 3px; min-height:47px; font-size:14px; }
+.admin-tabs button.active { color:#fff; background:var(--main); border-color:var(--main); }
+.admin-form label { display:block; font-size:14px; font-weight:700; margin:13px 0 6px; }
+.admin-form label:first-child { margin-top:0; }
+.admin-form input, .admin-form select, .admin-form textarea { width:100%; }
+.admin-form .mini { font-size:12px; color:var(--muted); margin:2px 0 11px; }
+.admin-list { display:grid; gap:10px; margin:14px 0 23px; }
+.admin-entry { background:var(--paper); border:1px solid var(--line); border-radius:9px; padding:14px 15px; }
+.admin-entry.off { background:#f7f8f7; opacity:.78; }
+.admin-entry b { overflow-wrap:anywhere; }
+.admin-entry .admin-sub { font-size:13px; color:var(--muted); overflow-wrap:anywhere; }
+.admin-entry button { width:auto; min-height:38px; padding:7px 13px; font-size:13px; margin:10px 0 0; }
+.admin-state { font-size:12px; color:var(--main-dark); font-weight:700; }
+.admin-entry.off .admin-state { color:var(--muted); }
+.admin-notice { font-size:13px; color:var(--muted); }
+@media(max-width:480px){.admin-tabs button{font-size:13px}}
+
+/* QR印刷・一包化登録。色数を抑えてスマホでも操作しやすくする */
+.qr-top-actions{display:flex;flex-wrap:wrap;gap:9px;margin:10px 0 20px}
+.qr-top-actions button{flex:1 1 135px;margin:0;min-height:47px;font-size:14px}
+.qr-top-actions button.active{background:var(--main);color:#fff;border-color:var(--main)}
+.qr-options{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.qr-options label{display:block;margin:0 0 4px;font-size:13px;font-weight:700}
+.qr-options select,.qr-options input{width:100%;min-width:0}
+.qr-check{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+.qr-check input{width:23px;height:23px;flex:none;margin:4px 0 0;accent-color:var(--main)}
+.qr-check span{flex:1}
+.qr-check small{display:block;color:var(--muted);font-size:12px}
+.qr-label-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.qr-label{background:#fff;border:1px solid #9dac9e;padding:13px 12px;text-align:center;break-inside:avoid;page-break-inside:avoid;overflow-wrap:anywhere}
+.qr-label svg{display:block;margin:8px auto;max-width:200px;width:95%;height:auto;background:#fff}
+.qr-label-id{font-size:21px;font-weight:800;letter-spacing:.03em;line-height:1.2}
+.qr-label-name{font-size:17px;font-weight:700;margin:7px 0 3px}
+.qr-label-kind{font-size:12px;color:#305b49;font-weight:800}
+.qr-label-meta{font-size:12px;line-height:1.55;margin:5px 0}
+.qr-label-drugs{text-align:left;font-size:11px;border-top:1px solid #ddd;padding-top:5px;margin-top:5px}
+.qr-label-drugs div{margin:2px 0}
+.qr-label-note{font-size:10px;color:#555;margin-top:8px;padding-top:5px;border-top:1px dashed #bbb}
+.qr-print-heading{font-size:18px;font-weight:700;margin:0 0 12px}
+.qr-label-date{font-size:16px;font-weight:850;border:2px solid #285e4e;border-radius:4px;padding:5px 2px;margin:6px 0;color:#173b30}
+.qr-period-presets{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}
+.qr-period-presets button{flex:1 1 110px;margin:0;font-size:12px;padding:9px 6px;min-height:42px}
+@media(max-width:520px){.qr-label-grid{grid-template-columns:1fr}.qr-options{grid-template-columns:1fr}}
+/* ---------- QR管理画面：スマホの横はみ出し対策 ---------- */
+/* グリッド内の子要素は既定の最小幅を持つため、狭い画面でも縮められるようにする。 */
+#app, #qr-page, #qr-content, .qr-label-grid, .qr-options,
+.qr-top-actions, .qr-period-presets, .qr-print-heading {
+  min-width:0;
+  max-width:100%;
+}
+.qr-options > div, .qr-label-grid > *, .qr-check span { min-width:0; max-width:100%; }
+.qr-options input, .qr-options select,
+.qr-options input[type="date"] {
+  display:block;
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  box-sizing:border-box;
+}
+.qr-top-actions > button, .qr-period-presets > button {
+  min-width:0;
+  max-width:100%;
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
+.qr-label {
+  min-width:0;
+  max-width:100%;
+  overflow:hidden;
+  overflow-wrap:anywhere;
+}
+.qr-label svg { width:95%; max-width:200px; height:auto; }
+.qr-label-date, .qr-label-meta, .qr-label-drugs, .qr-label-name,
+.qr-label-note, .qr-print-heading, #print-toolbar .lead {
+  overflow-wrap:anywhere;
+  word-break:normal;
+}
+.qr-label-date-caption { display:block; font-size:12px; line-height:1.5; }
+.qr-label-date-range { display:block; font-size:clamp(12px,3.4vw,16px); line-height:1.45; }
+@media (max-width:520px) {
+  .qr-options, .qr-label-grid { grid-template-columns:minmax(0,1fr); }
+  .qr-top-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .qr-top-actions > button { width:100%; padding:10px 5px; font-size:13px; }
+  .qr-period-presets { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .qr-period-presets > button { width:100%; padding:9px 5px; }
+  .qr-label { padding:13px 9px; }
+  .qr-label svg { max-width:min(200px,90%); }
+  .qr-label-date { padding:6px 4px; }
+}
+@media (max-width:320px) {
+  .qr-top-actions { grid-template-columns:minmax(0,1fr); }
+  .qr-label-date-range { font-size:12px; }
+}
+
+@media print {
+ @page {size:A4 portrait;margin:10mm}
+ body.qr-print-view {background:#fff;color:#000;font:12px/1.35 sans-serif}
+ body.qr-print-view header,body.qr-print-view #print-toolbar,body.qr-print-view .safety-panel {display:none!important}
+ body.qr-print-view main {max-width:none;margin:0;padding:0}
+ body.qr-print-view .qr-label-grid {grid-template-columns:repeat(3,minmax(0,1fr));gap:5mm}
+ body.qr-print-view .qr-label {border:1px solid #555;padding:3mm;min-height:65mm;box-shadow:none}
+ body.qr-print-view .qr-label svg {max-width:42mm}
+ body.qr-print-view .noprint {display:none!important}
+ body.qr-print-view .qr-label-id {font-size:16pt}
+ body.qr-print-view .qr-label-date {font-size:11pt;color:#000;border:1px solid #222}
+ body.qr-print-view .qr-label-name {font-size:12pt}
+ body.qr-print-view .qr-label-drugs {font-size:8pt}
+ body.qr-print-view .qr-print-heading {font-size:12pt}
+}
+
+/* ---------- 管理メニュー：スマホでも使えるドロワー ---------- */
+[hidden] {display:none!important}
+.header-inner {min-width:0}
+.brand{min-width:0}
+.header-actions{display:flex;gap:8px;align-items:center;min-width:0}
+button.menu-toggle {flex:none;width:43px;min-width:43px;height:43px;min-height:43px;margin:0;padding:7px;display:grid;place-items:center;color:var(--main-dark);border:1px solid var(--line);background:var(--main-soft);font-size:23px;line-height:1}
+#who{max-width:130px;min-width:0;overflow-wrap:anywhere}
+#admin-menu-overlay{position:fixed;inset:0;background:rgba(17,37,28,.48);z-index:1000;cursor:pointer;border:0;border-radius:0;width:100%;height:100%;min-height:0;margin:0;padding:0}
+#admin-drawer{position:fixed;z-index:1001;right:0;top:0;bottom:0;width:min(340px,90vw);max-width:100%;overflow-y:auto;overscroll-behavior:contain;background:#fff;box-shadow:-10px 0 30px rgba(0,0,0,.16);padding:20px 19px 25px}
+.drawer-header{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding-bottom:15px;margin-bottom:16px}
+.drawer-header b{font-size:21px;color:var(--main-dark)}
+#drawer-close{min-width:42px;width:42px;min-height:42px;height:42px;margin:0;padding:6px}
+.drawer-group-title{font-size:12px;color:var(--muted);font-weight:750;letter-spacing:.08em;margin:20px 0 7px}
+#admin-drawer [data-go]{min-height:46px;text-align:left;margin:5px 0;padding:10px 13px;font-size:15px;background:#fff}
+#admin-drawer [data-go]:focus-visible{outline-offset:0}
+#admin-drawer [data-go].selected{background:var(--main-soft);border-color:var(--main);color:var(--main-dark)}
+#admin-drawer .drawer-notice{margin-top:20px;color:var(--muted);font-size:12px}
+.admin-home-hint{margin:20px 0 0;font-size:13px;color:var(--muted)}
+.staff-admin-actions{display:flex;gap:8px;flex-wrap:wrap}
+.staff-admin-actions button{flex:1 1 120px;font-size:13px;padding:8px 9px;margin:4px 0;min-height:43px}
+.initial-password-box{border:2px solid var(--main);background:#f1f8f4;padding:15px;border-radius:10px;margin:18px 0}
+.initial-password-box input{background:#fff;width:100%;font-size:17px;letter-spacing:.04em}
+.initial-password-box .hint{margin-top:8px}
+@media(max-width:440px){.brand-name{font-size:21px}.brand-label{font-size:10px}.header-inner{padding:13px 12px;gap:5px}.header-actions{gap:5px}#who{font-size:10px;max-width:77px}#logout{font-size:10px;padding:6px 5px}button.menu-toggle{width:39px;min-width:39px;height:39px;min-height:39px;font-size:21px}}
+@media print {body.qr-print-view #admin-drawer,body.qr-print-view #admin-menu-overlay{display:none!important}}
+
+/* ---------- 職員一覧 → 詳細画面への画面遷移 ---------- */
+.staff-back-heading{display:flex;align-items:center;gap:12px;min-width:0;margin:0 0 17px}
+.staff-back-heading>div{min-width:0;flex:1}
+.staff-back-heading h2{margin:0;overflow-wrap:anywhere}
+.staff-back-heading .section-label{margin:0}
+button.staff-back-arrow{display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;min-height:44px;padding:0;margin:0;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--main-dark);font-size:25px;font-weight:650}
+button.staff-back-arrow:hover{background:var(--main-soft)}
+.staff-directory{display:grid;gap:9px;margin:14px 0 24px;min-width:0}
+button.staff-directory-row{display:flex;align-items:center;gap:9px;text-align:left;min-width:0;width:100%;min-height:76px;margin:0;padding:14px;background:#fff;border:1px solid var(--line);border-radius:12px;color:var(--ink);box-shadow:0 1px 4px rgba(8,38,24,.035)}
+button.staff-directory-row:hover{border-color:var(--main);background:#fcfefd}
+.staff-directory-copy{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.staff-directory-copy strong{font-size:16px;overflow-wrap:anywhere}
+.staff-directory-copy small{font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.staff-directory-next{flex:0 0 15px;color:var(--main-dark);font-size:26px;font-weight:450;line-height:1}
+.staff-status-label{flex:0 0 auto;max-width:86px;border-radius:20px;padding:5px 9px;font-size:12px;font-weight:750;color:#276150;background:#e9f3ec;white-space:nowrap}
+.staff-status-label.is-off{color:#7c534e;background:#f6ebe9}
+.staff-mini-profile{padding:16px;background:#f7faf8;border:1px solid var(--line);border-radius:12px;display:grid;gap:12px;min-width:0;margin-bottom:16px}
+.staff-profile-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;min-width:0}
+.staff-profile-row>span:first-child{color:var(--muted);font-size:14px;flex:0 0 115px}
+.staff-profile-row>span:last-child{font-weight:700;min-width:0;text-align:right;overflow-wrap:anywhere}
+.staff-detail-actions{display:grid;gap:10px;margin:16px 0 24px}
+.staff-detail-actions button{margin:0;min-height:47px}
+.staff-name-edit{margin:15px 0}
+.staff-name-edit input{width:100%;max-width:100%}
+.staff-action-divider{border-top:1px solid var(--line);margin:20px 0}
+.staff-detail-notice{font-size:13px;color:var(--muted);margin:12px 0}
+.staff-history-list{display:grid;gap:9px;min-width:0;margin-top:15px}
+.staff-history-item{background:#fff;border:1px solid var(--line);padding:13px 14px;border-radius:10px;overflow-wrap:anywhere}
+.staff-history-item .history-label{font-weight:700}
+.staff-history-item .history-meta{font-size:12px;color:var(--muted);margin-top:4px}
+.staff-history-item .history-change{font-size:13px;margin-top:7px}
+.staff-search-wrap{margin:12px 0;min-width:0}
+.staff-search-wrap input{width:100%;max-width:100%}
+@media(max-width:360px){.staff-status-label{padding:4px 7px}.staff-directory-row{padding:11px 9px;gap:6px}.staff-profile-row>span:first-child{flex-basis:87px}.staff-back-heading{gap:8px}}
+
+/* ---------- 2026-11: QR使用期間のスマホ/タブレット表示修正 ----------
+ * iOS Safari等のdate入力はブラウザ固有の最小幅を持つことがある。
+ * 印刷条件は端末幅によらず一列にし、入力欄の横方向の衝突を防ぐ。
+ * プレビューのQRラベルも画面では一列表示し、紙への印刷は別途3列。
+ */
+#qr-content, #qr-filters, #qr-filters .qr-options,
+#qr-page, #qr-page .qr-label-grid, #qr-page .qr-label {
+  box-sizing:border-box;
+  min-width:0;
+  max-width:100%;
+}
+#qr-filters .qr-options {
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:12px;
+}
+#qr-filters .qr-options > div {
+  min-width:0;
+  width:100%;
+  max-width:100%;
+}
+#qr-filters .qr-options label {
+  display:block;
+  max-width:100%;
+  overflow-wrap:anywhere;
+  line-height:1.5;
+  margin:0 0 6px;
+}
+#qr-filters .qr-options input,
+#qr-filters .qr-options select,
+#qr-filters .qr-options input[type="date"] {
+  display:block;
+  box-sizing:border-box;
+  inline-size:100%;
+  min-inline-size:0;
+  max-inline-size:100%;
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  font-size:16px;
+  line-height:normal;
+  padding:10px 12px;
+  margin:0;
+}
+#qr-filters .qr-options input[type="date"] {
+  overflow:hidden;
+  text-overflow:clip;
+}
+#qr-page .qr-label-grid {
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  justify-items:center;
+  gap:16px;
+}
+#qr-page .qr-label {
+  width:100%;
+  max-width:410px;
+  min-width:0;
+  overflow:hidden;
+}
+#qr-page .qr-label-date {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:2px;
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  overflow:hidden;
+  overflow-wrap:anywhere;
+  white-space:normal;
+}
+#qr-page .qr-label-date-range {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:1px;
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  font-size:clamp(12px,2.4vw,15px);
+  line-height:1.45;
+  font-variant-numeric:tabular-nums;
+  white-space:normal;
+}
+#qr-page .qr-label-date-range > span {
+  display:block;
+  max-width:100%;
+  overflow-wrap:anywhere;
+  white-space:normal;
+}
+@media print {
+  body.qr-print-view #qr-page .qr-label-grid {
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    justify-items:stretch;
+    gap:5mm;
+  }
+  body.qr-print-view #qr-page .qr-label {
+    width:100%;
+    max-width:none;
+    min-width:0;
+  }
+  body.qr-print-view #qr-page .qr-label-date-range {
+    font-size:9pt;
+    line-height:1.3;
+  }
+}
+
+/* ---------- 2026-11 iPad Safari 日付入力の枠はみ出し再修正 ----------
+ * iOS/iPadOS Safari の input[type=date] は日付コントロールの内側幅が
+ * padding / border 分だけ広く算出される場合がある。
+ * 表示上の枠は親要素で管理し、native picker は入力そのものに残す。
+ */
+#qr-filters .qr-options > .qr-date-field {
+  box-sizing:border-box;
+  min-width:0;
+  max-width:100%;
+  width:100%;
+}
+#qr-filters .qr-native-date-wrap {
+  display:block;
+  position:relative;
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  overflow:hidden;
+  background:#fff;
+  border:1px solid #bdcac2;
+  border-radius:8px;
+}
+#qr-filters .qr-native-date-wrap:focus-within {
+  outline:3px solid #8dbaa8;
+  outline-offset:2px;
+}
+#qr-filters .qr-native-date-wrap > input[type="date"] {
+  display:block;
+  /* iPad Safari が box-sizing を無視しても padding(12px×2) を加えた幅が枠内になる */
+  box-sizing:content-box;
+  width:calc(100% - 24px);
+  inline-size:calc(100% - 24px);
+  min-width:0;
+  min-inline-size:0;
+  max-width:calc(100% - 24px);
+  max-inline-size:calc(100% - 24px);
+  min-height:49px;
+  border:0;
+  border-radius:0;
+  padding:10px 12px;
+  margin:0;
+  background:transparent;
+  color:var(--ink);
+  font-size:16px;
+  line-height:normal;
+  text-align:center;
+  outline:none;
+  -webkit-tap-highlight-color:transparent;
+}
+#qr-filters .qr-native-date-wrap > input[type="date"]:focus-visible {
+  outline:none;
+}
+/* QR使用期間以外の項目と揃える。タブレットでも1列のまま。 */
+#qr-filters .qr-options {
+  width:100%;
+  max-width:100%;
+  grid-template-columns:minmax(0,1fr);
+}
+@media (max-width:1100px) {
+  #qr-content, #qr-filters, #qr-filters .qr-options,
+  #qr-filters .qr-date-field, #qr-filters .qr-native-date-wrap {
+    box-sizing:border-box;
+    min-width:0;
+    max-width:100%;
+  }
+}
+
+</style></head><body>
+<header><div class="header-inner"><div class="brand"><span class="brand-label">服薬管理 / サーバー連携</span><span class="brand-name">服薬確認</span></div>
+<div class="header-actions"><div id="who"></div><button id="logout" type="button" hidden>ログアウト</button><button id="menu-toggle" class="menu-toggle" type="button" hidden aria-expanded="false" aria-controls="admin-drawer" aria-label="管理者メニューを開く">&#9776;</button></div></div>
+<nav class="steps" id="steps" aria-label="服薬確認の進行状況"></nav></header>
+<button type="button" id="admin-menu-overlay" hidden aria-label="メニューを閉じる"></button>
+<nav id="admin-drawer" aria-label="管理者メニュー" hidden>
+  <div class="drawer-header"><b>管理者メニュー</b><button id="drawer-close" aria-label="メニューを閉じる" type="button">×</button></div>
+  <div class="drawer-group-title">服薬確認</div>
+  <button data-go="home" type="button">服薬確認へ戻る</button><button data-go="status" type="button">本日の服薬状況</button><button data-go="history" type="button">服薬履歴</button>
+  <div class="drawer-group-title">管理</div>
+  <button data-go="resident" type="button">利用者管理</button><button data-go="medicine" type="button">薬剤管理</button><button data-go="prescription" type="button">処方・服薬予定管理</button>
+  <button data-go="qr" type="button">一包化登録・QR作成／印刷</button><button data-go="staff" type="button">職員管理</button>
+  <div class="drawer-notice">新規職員の権限は一般職員に固定されます。アカウント登録はサーバー側で管理者を確認してから実行します。</div>
+</nav>
+<main id="app"><div class="card">ログイン画面を準備しています。</div></main>
+<script>
+/* QRコード生成: 同梱のExcel QR作成ツールと同じMITライセンスのQRライブラリを内蔵。 */
+(function(){
+'use strict';
+const __cache={};
+function __define(id,fn){const module={exports:{}};fn(module,module.exports,(dep)=>__cache[dep.replace(/^\.\//,'')]);__cache[id]=module.exports;}
+__define('QRMode', function(module, exports, require) {
+module.exports = {
+    MODE_NUMBER :       1 << 0,
+    MODE_ALPHA_NUM :    1 << 1,
+    MODE_8BIT_BYTE :    1 << 2,
+    MODE_KANJI :        1 << 3
+};
+
+});
+
+__define('QRErrorCorrectLevel', function(module, exports, require) {
+module.exports = {
+	L : 1,
+	M : 0,
+	Q : 3,
+	H : 2
+};
+
+
+});
+
+__define('QRMaskPattern', function(module, exports, require) {
+module.exports = {
+	PATTERN000 : 0,
+	PATTERN001 : 1,
+	PATTERN010 : 2,
+	PATTERN011 : 3,
+	PATTERN100 : 4,
+	PATTERN101 : 5,
+	PATTERN110 : 6,
+	PATTERN111 : 7
+};
+
+});
+
+__define('QRMath', function(module, exports, require) {
+var QRMath = {
+
+	glog : function(n) {
+	
+		if (n < 1) {
+			throw new Error("glog(" + n + ")");
+		}
+		
+		return QRMath.LOG_TABLE[n];
+	},
+	
+	gexp : function(n) {
+	
+		while (n < 0) {
+			n += 255;
+		}
+	
+		while (n >= 256) {
+			n -= 255;
+		}
+	
+		return QRMath.EXP_TABLE[n];
+	},
+	
+	EXP_TABLE : new Array(256),
+	
+	LOG_TABLE : new Array(256)
+
+};
+	
+for (var i = 0; i < 8; i++) {
+	QRMath.EXP_TABLE[i] = 1 << i;
+}
+for (var i = 8; i < 256; i++) {
+	QRMath.EXP_TABLE[i] = QRMath.EXP_TABLE[i - 4]
+		^ QRMath.EXP_TABLE[i - 5]
+		^ QRMath.EXP_TABLE[i - 6]
+		^ QRMath.EXP_TABLE[i - 8];
+}
+for (var i = 0; i < 255; i++) {
+	QRMath.LOG_TABLE[QRMath.EXP_TABLE[i] ] = i;
+}
+
+module.exports = QRMath;
+
+});
+
+__define('QRBitBuffer', function(module, exports, require) {
+function QRBitBuffer() {
+	this.buffer = [];
+	this.length = 0;
+}
+
+QRBitBuffer.prototype = {
+
+	get : function(index) {
+		var bufIndex = Math.floor(index / 8);
+		return ( (this.buffer[bufIndex] >>> (7 - index % 8) ) & 1) == 1;
+	},
+	
+	put : function(num, length) {
+		for (var i = 0; i < length; i++) {
+			this.putBit( ( (num >>> (length - i - 1) ) & 1) == 1);
+		}
+	},
+	
+	getLengthInBits : function() {
+		return this.length;
+	},
+	
+	putBit : function(bit) {
+	
+		var bufIndex = Math.floor(this.length / 8);
+		if (this.buffer.length <= bufIndex) {
+			this.buffer.push(0);
+		}
+	
+		if (bit) {
+			this.buffer[bufIndex] |= (0x80 >>> (this.length % 8) );
+		}
+	
+		this.length++;
+	}
+};
+
+module.exports = QRBitBuffer;
+
+});
+
+__define('QR8bitByte', function(module, exports, require) {
+var QRMode = require('./QRMode');
+
+function QR8bitByte(data) {
+	this.mode = QRMode.MODE_8BIT_BYTE;
+	this.data = data;
+}
+
+QR8bitByte.prototype = {
+
+	getLength : function() {
+		return this.data.length;
+	},
+	
+	write : function(buffer) {
+		for (var i = 0; i < this.data.length; i++) {
+			// not JIS ...
+			buffer.put(this.data.charCodeAt(i), 8);
+		}
+	}
+};
+
+module.exports = QR8bitByte;
+
+});
+
+__define('QRPolynomial', function(module, exports, require) {
+var QRMath = require('./QRMath');
+
+function QRPolynomial(num, shift) {
+	if (num.length === undefined) {
+		throw new Error(num.length + "/" + shift);
+	}
+
+	var offset = 0;
+
+	while (offset < num.length && num[offset] === 0) {
+		offset++;
+	}
+
+	this.num = new Array(num.length - offset + shift);
+	for (var i = 0; i < num.length - offset; i++) {
+		this.num[i] = num[i + offset];
+	}
+}
+
+QRPolynomial.prototype = {
+
+	get : function(index) {
+		return this.num[index];
+	},
+	
+	getLength : function() {
+		return this.num.length;
+	},
+	
+	multiply : function(e) {
+	
+		var num = new Array(this.getLength() + e.getLength() - 1);
+	
+		for (var i = 0; i < this.getLength(); i++) {
+			for (var j = 0; j < e.getLength(); j++) {
+				num[i + j] ^= QRMath.gexp(QRMath.glog(this.get(i) ) + QRMath.glog(e.get(j) ) );
+			}
+		}
+	
+		return new QRPolynomial(num, 0);
+	},
+	
+	mod : function(e) {
+	
+		if (this.getLength() - e.getLength() < 0) {
+			return this;
+		}
+	
+		var ratio = QRMath.glog(this.get(0) ) - QRMath.glog(e.get(0) );
+	
+		var num = new Array(this.getLength() );
+		
+		for (var i = 0; i < this.getLength(); i++) {
+			num[i] = this.get(i);
+		}
+		
+		for (var x = 0; x < e.getLength(); x++) {
+			num[x] ^= QRMath.gexp(QRMath.glog(e.get(x) ) + ratio);
+		}
+	
+		// recursive call
+		return new QRPolynomial(num, 0).mod(e);
+	}
+};
+
+module.exports = QRPolynomial;
+
+});
+
+__define('QRRSBlock', function(module, exports, require) {
+var QRErrorCorrectLevel = require('./QRErrorCorrectLevel');
+
+function QRRSBlock(totalCount, dataCount) {
+	this.totalCount = totalCount;
+	this.dataCount  = dataCount;
+}
+
+QRRSBlock.RS_BLOCK_TABLE = [
+
+	// L
+	// M
+	// Q
+	// H
+
+	// 1
+	[1, 26, 19],
+	[1, 26, 16],
+	[1, 26, 13],
+	[1, 26, 9],
+	
+	// 2
+	[1, 44, 34],
+	[1, 44, 28],
+	[1, 44, 22],
+	[1, 44, 16],
+
+	// 3
+	[1, 70, 55],
+	[1, 70, 44],
+	[2, 35, 17],
+	[2, 35, 13],
+
+	// 4		
+	[1, 100, 80],
+	[2, 50, 32],
+	[2, 50, 24],
+	[4, 25, 9],
+	
+	// 5
+	[1, 134, 108],
+	[2, 67, 43],
+	[2, 33, 15, 2, 34, 16],
+	[2, 33, 11, 2, 34, 12],
+	
+	// 6
+	[2, 86, 68],
+	[4, 43, 27],
+	[4, 43, 19],
+	[4, 43, 15],
+	
+	// 7		
+	[2, 98, 78],
+	[4, 49, 31],
+	[2, 32, 14, 4, 33, 15],
+	[4, 39, 13, 1, 40, 14],
+	
+	// 8
+	[2, 121, 97],
+	[2, 60, 38, 2, 61, 39],
+	[4, 40, 18, 2, 41, 19],
+	[4, 40, 14, 2, 41, 15],
+	
+	// 9
+	[2, 146, 116],
+	[3, 58, 36, 2, 59, 37],
+	[4, 36, 16, 4, 37, 17],
+	[4, 36, 12, 4, 37, 13],
+	
+	// 10		
+	[2, 86, 68, 2, 87, 69],
+	[4, 69, 43, 1, 70, 44],
+	[6, 43, 19, 2, 44, 20],
+	[6, 43, 15, 2, 44, 16],
+
+	// 11
+	[4, 101, 81],
+	[1, 80, 50, 4, 81, 51],
+	[4, 50, 22, 4, 51, 23],
+	[3, 36, 12, 8, 37, 13],
+
+	// 12
+	[2, 116, 92, 2, 117, 93],
+	[6, 58, 36, 2, 59, 37],
+	[4, 46, 20, 6, 47, 21],
+	[7, 42, 14, 4, 43, 15],
+
+	// 13
+	[4, 133, 107],
+	[8, 59, 37, 1, 60, 38],
+	[8, 44, 20, 4, 45, 21],
+	[12, 33, 11, 4, 34, 12],
+
+	// 14
+	[3, 145, 115, 1, 146, 116],
+	[4, 64, 40, 5, 65, 41],
+	[11, 36, 16, 5, 37, 17],
+	[11, 36, 12, 5, 37, 13],
+
+	// 15
+	[5, 109, 87, 1, 110, 88],
+	[5, 65, 41, 5, 66, 42],
+	[5, 54, 24, 7, 55, 25],
+	[11, 36, 12],
+
+	// 16
+	[5, 122, 98, 1, 123, 99],
+	[7, 73, 45, 3, 74, 46],
+	[15, 43, 19, 2, 44, 20],
+	[3, 45, 15, 13, 46, 16],
+
+	// 17
+	[1, 135, 107, 5, 136, 108],
+	[10, 74, 46, 1, 75, 47],
+	[1, 50, 22, 15, 51, 23],
+	[2, 42, 14, 17, 43, 15],
+
+	// 18
+	[5, 150, 120, 1, 151, 121],
+	[9, 69, 43, 4, 70, 44],
+	[17, 50, 22, 1, 51, 23],
+	[2, 42, 14, 19, 43, 15],
+
+	// 19
+	[3, 141, 113, 4, 142, 114],
+	[3, 70, 44, 11, 71, 45],
+	[17, 47, 21, 4, 48, 22],
+	[9, 39, 13, 16, 40, 14],
+
+	// 20
+	[3, 135, 107, 5, 136, 108],
+	[3, 67, 41, 13, 68, 42],
+	[15, 54, 24, 5, 55, 25],
+	[15, 43, 15, 10, 44, 16],
+
+	// 21
+	[4, 144, 116, 4, 145, 117],
+	[17, 68, 42],
+	[17, 50, 22, 6, 51, 23],
+	[19, 46, 16, 6, 47, 17],
+
+	// 22
+	[2, 139, 111, 7, 140, 112],
+	[17, 74, 46],
+	[7, 54, 24, 16, 55, 25],
+	[34, 37, 13],
+
+	// 23
+	[4, 151, 121, 5, 152, 122],
+	[4, 75, 47, 14, 76, 48],
+	[11, 54, 24, 14, 55, 25],
+	[16, 45, 15, 14, 46, 16],
+
+	// 24
+	[6, 147, 117, 4, 148, 118],
+	[6, 73, 45, 14, 74, 46],
+	[11, 54, 24, 16, 55, 25],
+	[30, 46, 16, 2, 47, 17],
+
+	// 25
+	[8, 132, 106, 4, 133, 107],
+	[8, 75, 47, 13, 76, 48],
+	[7, 54, 24, 22, 55, 25],
+	[22, 45, 15, 13, 46, 16],
+
+	// 26
+	[10, 142, 114, 2, 143, 115],
+	[19, 74, 46, 4, 75, 47],
+	[28, 50, 22, 6, 51, 23],
+	[33, 46, 16, 4, 47, 17],
+
+	// 27
+	[8, 152, 122, 4, 153, 123],
+	[22, 73, 45, 3, 74, 46],
+	[8, 53, 23, 26, 54, 24],
+	[12, 45, 15, 28, 46, 16],
+
+	// 28
+	[3, 147, 117, 10, 148, 118],
+	[3, 73, 45, 23, 74, 46],
+	[4, 54, 24, 31, 55, 25],
+	[11, 45, 15, 31, 46, 16],
+
+	// 29
+	[7, 146, 116, 7, 147, 117],
+	[21, 73, 45, 7, 74, 46],
+	[1, 53, 23, 37, 54, 24],
+	[19, 45, 15, 26, 46, 16],
+
+	// 30
+	[5, 145, 115, 10, 146, 116],
+	[19, 75, 47, 10, 76, 48],
+	[15, 54, 24, 25, 55, 25],
+	[23, 45, 15, 25, 46, 16],
+
+	// 31
+	[13, 145, 115, 3, 146, 116],
+	[2, 74, 46, 29, 75, 47],
+	[42, 54, 24, 1, 55, 25],
+	[23, 45, 15, 28, 46, 16],
+
+	// 32
+	[17, 145, 115],
+	[10, 74, 46, 23, 75, 47],
+	[10, 54, 24, 35, 55, 25],
+	[19, 45, 15, 35, 46, 16],
+
+	// 33
+	[17, 145, 115, 1, 146, 116],
+	[14, 74, 46, 21, 75, 47],
+	[29, 54, 24, 19, 55, 25],
+	[11, 45, 15, 46, 46, 16],
+
+	// 34
+	[13, 145, 115, 6, 146, 116],
+	[14, 74, 46, 23, 75, 47],
+	[44, 54, 24, 7, 55, 25],
+	[59, 46, 16, 1, 47, 17],
+
+	// 35
+	[12, 151, 121, 7, 152, 122],
+	[12, 75, 47, 26, 76, 48],
+	[39, 54, 24, 14, 55, 25],
+	[22, 45, 15, 41, 46, 16],
+
+	// 36
+	[6, 151, 121, 14, 152, 122],
+	[6, 75, 47, 34, 76, 48],
+	[46, 54, 24, 10, 55, 25],
+	[2, 45, 15, 64, 46, 16],
+
+	// 37
+	[17, 152, 122, 4, 153, 123],
+	[29, 74, 46, 14, 75, 47],
+	[49, 54, 24, 10, 55, 25],
+	[24, 45, 15, 46, 46, 16],
+
+	// 38
+	[4, 152, 122, 18, 153, 123],
+	[13, 74, 46, 32, 75, 47],
+	[48, 54, 24, 14, 55, 25],
+	[42, 45, 15, 32, 46, 16],
+
+	// 39
+	[20, 147, 117, 4, 148, 118],
+	[40, 75, 47, 7, 76, 48],
+	[43, 54, 24, 22, 55, 25],
+	[10, 45, 15, 67, 46, 16],
+
+	// 40
+	[19, 148, 118, 6, 149, 119],
+	[18, 75, 47, 31, 76, 48],
+	[34, 54, 24, 34, 55, 25],
+	[20, 45, 15, 61, 46, 16]
+];
+
+QRRSBlock.getRSBlocks = function(typeNumber, errorCorrectLevel) {
+	
+	var rsBlock = QRRSBlock.getRsBlockTable(typeNumber, errorCorrectLevel);
+	
+	if (rsBlock === undefined) {
+		throw new Error("bad rs block @ typeNumber:" + typeNumber + "/errorCorrectLevel:" + errorCorrectLevel);
+	}
+
+	var length = rsBlock.length / 3;
+	
+	var list = [];
+	
+	for (var i = 0; i < length; i++) {
+
+		var count = rsBlock[i * 3 + 0];
+		var totalCount = rsBlock[i * 3 + 1];
+		var dataCount  = rsBlock[i * 3 + 2];
+
+		for (var j = 0; j < count; j++) {
+			list.push(new QRRSBlock(totalCount, dataCount) );	
+		}
+	}
+	
+	return list;
+};
+
+QRRSBlock.getRsBlockTable = function(typeNumber, errorCorrectLevel) {
+
+	switch(errorCorrectLevel) {
+	case QRErrorCorrectLevel.L :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 0];
+	case QRErrorCorrectLevel.M :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 1];
+	case QRErrorCorrectLevel.Q :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 2];
+	case QRErrorCorrectLevel.H :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 3];
+	default :
+		return undefined;
+	}
+};
+
+module.exports = QRRSBlock;
+
+});
+
+__define('QRUtil', function(module, exports, require) {
+var QRMode = require('./QRMode');
+var QRPolynomial = require('./QRPolynomial');
+var QRMath = require('./QRMath');
+var QRMaskPattern = require('./QRMaskPattern');
+
+var QRUtil = {
+
+    PATTERN_POSITION_TABLE : [
+        [],
+        [6, 18],
+        [6, 22],
+        [6, 26],
+        [6, 30],
+        [6, 34],
+        [6, 22, 38],
+        [6, 24, 42],
+        [6, 26, 46],
+        [6, 28, 50],
+        [6, 30, 54],        
+        [6, 32, 58],
+        [6, 34, 62],
+        [6, 26, 46, 66],
+        [6, 26, 48, 70],
+        [6, 26, 50, 74],
+        [6, 30, 54, 78],
+        [6, 30, 56, 82],
+        [6, 30, 58, 86],
+        [6, 34, 62, 90],
+        [6, 28, 50, 72, 94],
+        [6, 26, 50, 74, 98],
+        [6, 30, 54, 78, 102],
+        [6, 28, 54, 80, 106],
+        [6, 32, 58, 84, 110],
+        [6, 30, 58, 86, 114],
+        [6, 34, 62, 90, 118],
+        [6, 26, 50, 74, 98, 122],
+        [6, 30, 54, 78, 102, 126],
+        [6, 26, 52, 78, 104, 130],
+        [6, 30, 56, 82, 108, 134],
+        [6, 34, 60, 86, 112, 138],
+        [6, 30, 58, 86, 114, 142],
+        [6, 34, 62, 90, 118, 146],
+        [6, 30, 54, 78, 102, 126, 150],
+        [6, 24, 50, 76, 102, 128, 154],
+        [6, 28, 54, 80, 106, 132, 158],
+        [6, 32, 58, 84, 110, 136, 162],
+        [6, 26, 54, 82, 110, 138, 166],
+        [6, 30, 58, 86, 114, 142, 170]
+    ],
+
+    G15 : (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0),
+    G18 : (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0),
+    G15_MASK : (1 << 14) | (1 << 12) | (1 << 10)    | (1 << 4) | (1 << 1),
+
+    getBCHTypeInfo : function(data) {
+        var d = data << 10;
+        while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15) >= 0) {
+            d ^= (QRUtil.G15 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15) ) );    
+        }
+        return ( (data << 10) | d) ^ QRUtil.G15_MASK;
+    },
+
+    getBCHTypeNumber : function(data) {
+        var d = data << 12;
+        while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) >= 0) {
+            d ^= (QRUtil.G18 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) ) );    
+        }
+        return (data << 12) | d;
+    },
+
+    getBCHDigit : function(data) {
+
+        var digit = 0;
+
+        while (data !== 0) {
+            digit++;
+            data >>>= 1;
+        }
+
+        return digit;
+    },
+
+    getPatternPosition : function(typeNumber) {
+        return QRUtil.PATTERN_POSITION_TABLE[typeNumber - 1];
+    },
+
+    getMask : function(maskPattern, i, j) {
+        
+        switch (maskPattern) {
+            
+        case QRMaskPattern.PATTERN000 : return (i + j) % 2 === 0;
+        case QRMaskPattern.PATTERN001 : return i % 2 === 0;
+        case QRMaskPattern.PATTERN010 : return j % 3 === 0;
+        case QRMaskPattern.PATTERN011 : return (i + j) % 3 === 0;
+        case QRMaskPattern.PATTERN100 : return (Math.floor(i / 2) + Math.floor(j / 3) ) % 2 === 0;
+        case QRMaskPattern.PATTERN101 : return (i * j) % 2 + (i * j) % 3 === 0;
+        case QRMaskPattern.PATTERN110 : return ( (i * j) % 2 + (i * j) % 3) % 2 === 0;
+        case QRMaskPattern.PATTERN111 : return ( (i * j) % 3 + (i + j) % 2) % 2 === 0;
+
+        default :
+            throw new Error("bad maskPattern:" + maskPattern);
+        }
+    },
+
+    getErrorCorrectPolynomial : function(errorCorrectLength) {
+
+        var a = new QRPolynomial([1], 0);
+
+        for (var i = 0; i < errorCorrectLength; i++) {
+            a = a.multiply(new QRPolynomial([1, QRMath.gexp(i)], 0) );
+        }
+
+        return a;
+    },
+
+    getLengthInBits : function(mode, type) {
+
+        if (1 <= type && type < 10) {
+
+            // 1 - 9
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 10;
+            case QRMode.MODE_ALPHA_NUM  : return 9;
+            case QRMode.MODE_8BIT_BYTE  : return 8;
+            case QRMode.MODE_KANJI      : return 8;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else if (type < 27) {
+
+            // 10 - 26
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 12;
+            case QRMode.MODE_ALPHA_NUM  : return 11;
+            case QRMode.MODE_8BIT_BYTE  : return 16;
+            case QRMode.MODE_KANJI      : return 10;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else if (type < 41) {
+
+            // 27 - 40
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 14;
+            case QRMode.MODE_ALPHA_NUM  : return 13;
+            case QRMode.MODE_8BIT_BYTE  : return 16;
+            case QRMode.MODE_KANJI      : return 12;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else {
+            throw new Error("type:" + type);
+        }
+    },
+
+    getLostPoint : function(qrCode) {
+        
+        var moduleCount = qrCode.getModuleCount();
+        var lostPoint = 0;
+        var row = 0; 
+        var col = 0;
+
+        
+        // LEVEL1
+        
+        for (row = 0; row < moduleCount; row++) {
+
+            for (col = 0; col < moduleCount; col++) {
+
+                var sameCount = 0;
+                var dark = qrCode.isDark(row, col);
+
+                for (var r = -1; r <= 1; r++) {
+
+                    if (row + r < 0 || moduleCount <= row + r) {
+                        continue;
+                    }
+
+                    for (var c = -1; c <= 1; c++) {
+
+                        if (col + c < 0 || moduleCount <= col + c) {
+                            continue;
+                        }
+
+                        if (r === 0 && c === 0) {
+                            continue;
+                        }
+
+                        if (dark === qrCode.isDark(row + r, col + c) ) {
+                            sameCount++;
+                        }
+                    }
+                }
+
+                if (sameCount > 5) {
+                    lostPoint += (3 + sameCount - 5);
+                }
+            }
+        }
+
+        // LEVEL2
+
+        for (row = 0; row < moduleCount - 1; row++) {
+            for (col = 0; col < moduleCount - 1; col++) {
+                var count = 0;
+                if (qrCode.isDark(row,     col    ) ) count++;
+                if (qrCode.isDark(row + 1, col    ) ) count++;
+                if (qrCode.isDark(row,     col + 1) ) count++;
+                if (qrCode.isDark(row + 1, col + 1) ) count++;
+                if (count === 0 || count === 4) {
+                    lostPoint += 3;
+                }
+            }
+        }
+
+        // LEVEL3
+
+        for (row = 0; row < moduleCount; row++) {
+            for (col = 0; col < moduleCount - 6; col++) {
+                if (qrCode.isDark(row, col) && 
+                        !qrCode.isDark(row, col + 1) && 
+                         qrCode.isDark(row, col + 2) && 
+                         qrCode.isDark(row, col + 3) && 
+                         qrCode.isDark(row, col + 4) && 
+                        !qrCode.isDark(row, col + 5) && 
+                         qrCode.isDark(row, col + 6) ) {
+                    lostPoint += 40;
+                }
+            }
+        }
+
+        for (col = 0; col < moduleCount; col++) {
+            for (row = 0; row < moduleCount - 6; row++) {
+                if (qrCode.isDark(row, col) &&
+                        !qrCode.isDark(row + 1, col) &&
+                         qrCode.isDark(row + 2, col) &&
+                         qrCode.isDark(row + 3, col) &&
+                         qrCode.isDark(row + 4, col) &&
+                        !qrCode.isDark(row + 5, col) &&
+                         qrCode.isDark(row + 6, col) ) {
+                    lostPoint += 40;
+                }
+            }
+        }
+
+        // LEVEL4
+        
+        var darkCount = 0;
+
+        for (col = 0; col < moduleCount; col++) {
+            for (row = 0; row < moduleCount; row++) {
+                if (qrCode.isDark(row, col) ) {
+                    darkCount++;
+                }
+            }
+        }
+        
+        var ratio = Math.abs(100 * darkCount / moduleCount / moduleCount - 50) / 5;
+        lostPoint += ratio * 10;
+
+        return lostPoint;       
+    }
+
+};
+
+module.exports = QRUtil;
+
+});
+
+__define('index', function(module, exports, require) {
+//---------------------------------------------------------------------
+// QRCode for JavaScript
+//
+// Copyright (c) 2009 Kazuhiko Arase
+//
+// URL: http://www.d-project.com/
+//
+// Licensed under the MIT license:
+//   http://www.opensource.org/licenses/mit-license.php
+//
+// The word "QR Code" is registered trademark of 
+// DENSO WAVE INCORPORATED
+//   http://www.denso-wave.com/qrcode/faqpatent-e.html
+//
+//---------------------------------------------------------------------
+// Modified to work in node for this project (and some refactoring)
+//---------------------------------------------------------------------
+
+var QR8bitByte = require('./QR8bitByte');
+var QRUtil = require('./QRUtil');
+var QRPolynomial = require('./QRPolynomial');
+var QRRSBlock = require('./QRRSBlock');
+var QRBitBuffer = require('./QRBitBuffer');
+
+function QRCode(typeNumber, errorCorrectLevel) {
+	this.typeNumber = typeNumber;
+	this.errorCorrectLevel = errorCorrectLevel;
+	this.modules = null;
+	this.moduleCount = 0;
+	this.dataCache = null;
+	this.dataList = [];
+}
+
+QRCode.prototype = {
+	
+	addData : function(data) {
+		var newData = new QR8bitByte(data);
+		this.dataList.push(newData);
+		this.dataCache = null;
+	},
+	
+	isDark : function(row, col) {
+		if (row < 0 || this.moduleCount <= row || col < 0 || this.moduleCount <= col) {
+			throw new Error(row + "," + col);
+		}
+		return this.modules[row][col];
+	},
+
+	getModuleCount : function() {
+		return this.moduleCount;
+	},
+	
+	make : function() {
+		// Calculate automatically typeNumber if provided is < 1
+		if (this.typeNumber < 1 ){
+			var typeNumber = 1;
+			for (typeNumber = 1; typeNumber < 40; typeNumber++) {
+				var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, this.errorCorrectLevel);
+
+				var buffer = new QRBitBuffer();
+				var totalDataCount = 0;
+				for (var i = 0; i < rsBlocks.length; i++) {
+					totalDataCount += rsBlocks[i].dataCount;
+				}
+
+				for (var x = 0; x < this.dataList.length; x++) {
+					var data = this.dataList[x];
+					buffer.put(data.mode, 4);
+					buffer.put(data.getLength(), QRUtil.getLengthInBits(data.mode, typeNumber) );
+					data.write(buffer);
+				}
+				if (buffer.getLengthInBits() <= totalDataCount * 8)
+					break;
+			}
+			this.typeNumber = typeNumber;
+		}
+		this.makeImpl(false, this.getBestMaskPattern() );
+	},
+	
+	makeImpl : function(test, maskPattern) {
+		
+		this.moduleCount = this.typeNumber * 4 + 17;
+		this.modules = new Array(this.moduleCount);
+		
+		for (var row = 0; row < this.moduleCount; row++) {
+			
+			this.modules[row] = new Array(this.moduleCount);
+			
+			for (var col = 0; col < this.moduleCount; col++) {
+				this.modules[row][col] = null;//(col + row) % 3;
+			}
+		}
+	
+		this.setupPositionProbePattern(0, 0);
+		this.setupPositionProbePattern(this.moduleCount - 7, 0);
+		this.setupPositionProbePattern(0, this.moduleCount - 7);
+		this.setupPositionAdjustPattern();
+		this.setupTimingPattern();
+		this.setupTypeInfo(test, maskPattern);
+		
+		if (this.typeNumber >= 7) {
+			this.setupTypeNumber(test);
+		}
+	
+		if (this.dataCache === null) {
+			this.dataCache = QRCode.createData(this.typeNumber, this.errorCorrectLevel, this.dataList);
+		}
+	
+		this.mapData(this.dataCache, maskPattern);
+	},
+
+	setupPositionProbePattern : function(row, col)  {
+		
+		for (var r = -1; r <= 7; r++) {
+			
+			if (row + r <= -1 || this.moduleCount <= row + r) continue;
+			
+			for (var c = -1; c <= 7; c++) {
+				
+				if (col + c <= -1 || this.moduleCount <= col + c) continue;
+				
+				if ( (0 <= r && r <= 6 && (c === 0 || c === 6) ) || 
+                     (0 <= c && c <= 6 && (r === 0 || r === 6) ) || 
+                     (2 <= r && r <= 4 && 2 <= c && c <= 4) ) {
+					this.modules[row + r][col + c] = true;
+				} else {
+					this.modules[row + r][col + c] = false;
+				}
+			}		
+		}		
+	},
+	
+	getBestMaskPattern : function() {
+	
+		var minLostPoint = 0;
+		var pattern = 0;
+	
+		for (var i = 0; i < 8; i++) {
+			
+			this.makeImpl(true, i);
+	
+			var lostPoint = QRUtil.getLostPoint(this);
+	
+			if (i === 0 || minLostPoint >  lostPoint) {
+				minLostPoint = lostPoint;
+				pattern = i;
+			}
+		}
+	
+		return pattern;
+	},
+	
+	createMovieClip : function(target_mc, instance_name, depth) {
+	
+		var qr_mc = target_mc.createEmptyMovieClip(instance_name, depth);
+		var cs = 1;
+	
+		this.make();
+
+		for (var row = 0; row < this.modules.length; row++) {
+			
+			var y = row * cs;
+			
+			for (var col = 0; col < this.modules[row].length; col++) {
+	
+				var x = col * cs;
+				var dark = this.modules[row][col];
+			
+				if (dark) {
+					qr_mc.beginFill(0, 100);
+					qr_mc.moveTo(x, y);
+					qr_mc.lineTo(x + cs, y);
+					qr_mc.lineTo(x + cs, y + cs);
+					qr_mc.lineTo(x, y + cs);
+					qr_mc.endFill();
+				}
+			}
+		}
+		
+		return qr_mc;
+	},
+
+	setupTimingPattern : function() {
+		
+		for (var r = 8; r < this.moduleCount - 8; r++) {
+			if (this.modules[r][6] !== null) {
+				continue;
+			}
+			this.modules[r][6] = (r % 2 === 0);
+		}
+	
+		for (var c = 8; c < this.moduleCount - 8; c++) {
+			if (this.modules[6][c] !== null) {
+				continue;
+			}
+			this.modules[6][c] = (c % 2 === 0);
+		}
+	},
+	
+	setupPositionAdjustPattern : function() {
+	
+		var pos = QRUtil.getPatternPosition(this.typeNumber);
+		
+		for (var i = 0; i < pos.length; i++) {
+		
+			for (var j = 0; j < pos.length; j++) {
+			
+				var row = pos[i];
+				var col = pos[j];
+				
+				if (this.modules[row][col] !== null) {
+					continue;
+				}
+				
+				for (var r = -2; r <= 2; r++) {
+				
+					for (var c = -2; c <= 2; c++) {
+					
+						if (Math.abs(r) === 2 || 
+                            Math.abs(c) === 2 ||
+                            (r === 0 && c === 0) ) {
+							this.modules[row + r][col + c] = true;
+						} else {
+							this.modules[row + r][col + c] = false;
+						}
+					}
+				}
+			}
+		}
+	},
+	
+	setupTypeNumber : function(test) {
+	
+		var bits = QRUtil.getBCHTypeNumber(this.typeNumber);
+        var mod;
+	
+		for (var i = 0; i < 18; i++) {
+			mod = (!test && ( (bits >> i) & 1) === 1);
+			this.modules[Math.floor(i / 3)][i % 3 + this.moduleCount - 8 - 3] = mod;
+		}
+	
+		for (var x = 0; x < 18; x++) {
+			mod = (!test && ( (bits >> x) & 1) === 1);
+			this.modules[x % 3 + this.moduleCount - 8 - 3][Math.floor(x / 3)] = mod;
+		}
+	},
+	
+	setupTypeInfo : function(test, maskPattern) {
+	
+		var data = (this.errorCorrectLevel << 3) | maskPattern;
+		var bits = QRUtil.getBCHTypeInfo(data);
+        var mod;
+	
+		// vertical		
+		for (var v = 0; v < 15; v++) {
+	
+			mod = (!test && ( (bits >> v) & 1) === 1);
+	
+			if (v < 6) {
+				this.modules[v][8] = mod;
+			} else if (v < 8) {
+				this.modules[v + 1][8] = mod;
+			} else {
+				this.modules[this.moduleCount - 15 + v][8] = mod;
+			}
+		}
+	
+		// horizontal
+		for (var h = 0; h < 15; h++) {
+	
+			mod = (!test && ( (bits >> h) & 1) === 1);
+			
+			if (h < 8) {
+				this.modules[8][this.moduleCount - h - 1] = mod;
+			} else if (h < 9) {
+				this.modules[8][15 - h - 1 + 1] = mod;
+			} else {
+				this.modules[8][15 - h - 1] = mod;
+			}
+		}
+	
+		// fixed module
+		this.modules[this.moduleCount - 8][8] = (!test);
+	
+	},
+	
+	mapData : function(data, maskPattern) {
+		
+		var inc = -1;
+		var row = this.moduleCount - 1;
+		var bitIndex = 7;
+		var byteIndex = 0;
+		
+		for (var col = this.moduleCount - 1; col > 0; col -= 2) {
+	
+			if (col === 6) col--;
+	
+			while (true) {
+	
+				for (var c = 0; c < 2; c++) {
+					
+					if (this.modules[row][col - c] === null) {
+						
+						var dark = false;
+	
+						if (byteIndex < data.length) {
+							dark = ( ( (data[byteIndex] >>> bitIndex) & 1) === 1);
+						}
+	
+						var mask = QRUtil.getMask(maskPattern, row, col - c);
+	
+						if (mask) {
+							dark = !dark;
+						}
+						
+						this.modules[row][col - c] = dark;
+						bitIndex--;
+	
+						if (bitIndex === -1) {
+							byteIndex++;
+							bitIndex = 7;
+						}
+					}
+				}
+								
+				row += inc;
+	
+				if (row < 0 || this.moduleCount <= row) {
+					row -= inc;
+					inc = -inc;
+					break;
+				}
+			}
+		}
+		
+	}
+
+};
+
+QRCode.PAD0 = 0xEC;
+QRCode.PAD1 = 0x11;
+
+QRCode.createData = function(typeNumber, errorCorrectLevel, dataList) {
+	
+	var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, errorCorrectLevel);
+	
+	var buffer = new QRBitBuffer();
+	
+	for (var i = 0; i < dataList.length; i++) {
+		var data = dataList[i];
+		buffer.put(data.mode, 4);
+		buffer.put(data.getLength(), QRUtil.getLengthInBits(data.mode, typeNumber) );
+		data.write(buffer);
+	}
+
+	// calc num max data.
+	var totalDataCount = 0;
+	for (var x = 0; x < rsBlocks.length; x++) {
+		totalDataCount += rsBlocks[x].dataCount;
+	}
+
+	if (buffer.getLengthInBits() > totalDataCount * 8) {
+		throw new Error("code length overflow. (" + 
+            buffer.getLengthInBits() + 
+            ">" +  
+            totalDataCount * 8 + 
+            ")");
+	}
+
+	// end code
+	if (buffer.getLengthInBits() + 4 <= totalDataCount * 8) {
+		buffer.put(0, 4);
+	}
+
+	// padding
+	while (buffer.getLengthInBits() % 8 !== 0) {
+		buffer.putBit(false);
+	}
+
+	// padding
+	while (true) {
+		
+		if (buffer.getLengthInBits() >= totalDataCount * 8) {
+			break;
+		}
+		buffer.put(QRCode.PAD0, 8);
+		
+		if (buffer.getLengthInBits() >= totalDataCount * 8) {
+			break;
+		}
+		buffer.put(QRCode.PAD1, 8);
+	}
+
+	return QRCode.createBytes(buffer, rsBlocks);
+};
+
+QRCode.createBytes = function(buffer, rsBlocks) {
+
+	var offset = 0;
+	
+	var maxDcCount = 0;
+	var maxEcCount = 0;
+	
+	var dcdata = new Array(rsBlocks.length);
+	var ecdata = new Array(rsBlocks.length);
+	
+	for (var r = 0; r < rsBlocks.length; r++) {
+
+		var dcCount = rsBlocks[r].dataCount;
+		var ecCount = rsBlocks[r].totalCount - dcCount;
+
+		maxDcCount = Math.max(maxDcCount, dcCount);
+		maxEcCount = Math.max(maxEcCount, ecCount);
+		
+		dcdata[r] = new Array(dcCount);
+		
+		for (var i = 0; i < dcdata[r].length; i++) {
+			dcdata[r][i] = 0xff & buffer.buffer[i + offset];
+		}
+		offset += dcCount;
+		
+		var rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount);
+		var rawPoly = new QRPolynomial(dcdata[r], rsPoly.getLength() - 1);
+
+		var modPoly = rawPoly.mod(rsPoly);
+		ecdata[r] = new Array(rsPoly.getLength() - 1);
+		for (var x = 0; x < ecdata[r].length; x++) {
+            var modIndex = x + modPoly.getLength() - ecdata[r].length;
+			ecdata[r][x] = (modIndex >= 0)? modPoly.get(modIndex) : 0;
+		}
+
+	}
+	
+	var totalCodeCount = 0;
+	for (var y = 0; y < rsBlocks.length; y++) {
+		totalCodeCount += rsBlocks[y].totalCount;
+	}
+
+	var data = new Array(totalCodeCount);
+	var index = 0;
+
+	for (var z = 0; z < maxDcCount; z++) {
+		for (var s = 0; s < rsBlocks.length; s++) {
+			if (z < dcdata[s].length) {
+				data[index++] = dcdata[s][z];
+			}
+		}
+	}
+
+	for (var xx = 0; xx < maxEcCount; xx++) {
+		for (var t = 0; t < rsBlocks.length; t++) {
+			if (xx < ecdata[t].length) {
+				data[index++] = ecdata[t][xx];
+			}
+		}
+	}
+
+	return data;
+
+};
+
+module.exports = QRCode;
+
+});
+
+window.QR_LOCAL={QRCode:__cache['index'],level:__cache['QRErrorCorrectLevel']};
+})();
+</script>
+<script>'use strict';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const SLOTS=['朝','昼','夕','就寝前'];
+const STATUSES=['服薬済み','未服薬','拒否'];
+const REASONS=['食事を摂れなかった','体調不良','眠っていた','嘔吐した','本人が飲みたくないと言った','その他'];
+const pad=n=>String(n).padStart(2,'0');
+const hm=iso=>{let d=new Date(iso);return d.toLocaleTimeString('ja-JP',{timeZone:'Asia/Tokyo',hour:'2-digit',minute:'2-digit',hour12:false})};
+function todayJST(){let p=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); let o={};p.forEach(x=>o[x.type]=x.value);return `${o.year}-${o.month}-${o.day}`}
+function currentSlot(){const h=Number(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Tokyo',hour:'numeric',hourCycle:'h23'}).format(new Date()));return h>=5&&h<11?'朝':h>=11&&h<15?'昼':h>=15&&h<20?'夕':'就寝前'}
+
+// 日付計算はUTCの暦日を使い、夏時間・端末のタイムゾーンに影響されないようにする。
+function parseDateISO(value){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(value||''))return null;
+  const d=new Date(value+'T00:00:00Z');
+  return !Number.isNaN(d.getTime())&&d.toISOString().slice(0,10)===value?d:null;
+}
+function moveDay(value,delta){
+  const d=parseDateISO(value);if(!d)return '';
+  d.setUTCDate(d.getUTCDate()+delta);return d.toISOString().slice(0,10);
+}
+function periodDates(start,end){
+  const a=parseDateISO(start),b=parseDateISO(end);
+  if(!a||!b)return {dates:[],error:'開始日と終了日を正しく入力してください。'};
+  const days=Math.round((b.getTime()-a.getTime())/86400000)+1;
+  if(days<1)return {dates:[],error:'終了日は開始日以降に設定してください。'};
+  if(days>366)return {dates:[],error:'期間は最長366日までにしてください。'};
+  return {dates:Array.from({length:days},(_,i)=>moveDay(start,i)),error:''};
+}
+function monthBoundary(date,monthOffset=0){
+  const d=parseDateISO(date)||parseDateISO(todayJST());
+  const first=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+monthOffset,1));
+  const last=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+monthOffset+1,0));
+  return [first.toISOString().slice(0,10),last.toISOString().slice(0,10)];
+}
+// QR内容: MC2|開始日|終了日|P001（個別）または MC2|開始日|終了日|G001（一包化）。
+// 開始日・終了日はQRごとに登録済み処方の有効期間との共通部分に絞る。
+function periodQrValue(id,start,end){return `MC2|${start}|${end}|${id}`;}
+
+let client=null, user=null, staff=null, screen='login', scanStream=null, scanRaf=0, scanBusy=false, scanToken=0;
+const C={staff:[],residents:[],medicines:[],prescriptions:[],logs:[],corrections:[],date:null,qrGroups:[],qrGroupItems:[],qrReady:false};
+const Q={panel:'print',residentId:'',slot:'朝',startDate:todayJST(),endDate:todayJST(),groupResident:'',groupSlot:'朝',groupPeriod:''};
+const A={slot:currentSlot(),resident:null,rx:null,qrText:null,check:null,status:null,reason:'',rsel:'',rfree:'',date:todayJST(),filter:'すべて',historyResident:'',historyDate:todayJST(),lastSaved:null,step:1};
+const repo={
+  getStaffList:()=>C.staff,
+  getStaff:id=>C.staff.find(x=>x.id===id),
+  getResidents:()=>C.residents,
+  getResident:id=>C.residents.find(x=>x.id===id),
+  getMedicine:id=>C.medicines.find(x=>x.id===id),
+  getPrescriptions:()=>C.prescriptions,
+  getPrescription:id=>C.prescriptions.find(x=>x.id===id),
+  getLogs:()=>C.logs,
+  findLog:(id,date,slot)=>C.logs.find(x=>x.prescriptionId===id&&x.date===date&&x.timeSlot===slot),
+  getCorrections:id=>C.corrections.filter(x=>x.logId===id).sort((a,b)=>a.revision-b.revision),
+  getCurrentStatus(log){const a=this.getCorrections(log.id);return a.length?a[a.length-1].toStatus:log.status}
+};
+function errorMessage(e){return (e&&e.message)?e.message:'通信エラーが発生しました'}
+// 診断情報だけを表示する。パスワード・メール・APIキー・接続URLは表示しない。
+function safeAuthError(e){
+  const safe=(s,n=180)=>String(s??'なし')
+    .replace(/https?:\/\/[^\s\"'<>]+/gi,'[URL非表示]')
+    .replace(/sb_(?:publishable|secret)_[A-Za-z0-9_-]+/g,'[APIキー非表示]')
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,'[メール非表示]')
+    .slice(0,n);
+  const code=safe(e?.code||'なし',80),name=safe(e?.name||'なし',80),status=safe(e?.status??'なし',30),message=safe(e?.message||'なし',240);
+  const raw=String(e?.message||'');
+  let help='接続先Project URLとPublishable keyが同じプロジェクトか確認してください。';
+  if(/failed to fetch|network|fetch failed|connection|timeout|request failed/i.test(raw)||/AuthRetryableFetchError/i.test(name))
+    help='Supabaseへの通信に失敗している可能性があります。インターネット接続とProject URLを確認してください。';
+  else if(/invalid api key|invalid jwt|api key/i.test(raw))
+    help='SupabaseのAPIキーが正しいか、Project URLと同じプロジェクトか確認してください。';
+  else if(/invalid login credentials|invalid_credentials/i.test(code+' '+raw))
+    help='メールアドレス・パスワードと、接続先のSupabaseプロジェクトを確認してください。';
+  else if(/email not confirmed|email_not_confirmed/i.test(code+' '+raw))
+    help='SupabaseのAuthentication → Usersでメール認証状態を確認してください。';
+  return 'ログインできませんでした。'+help+'\n診断情報：\n種類: '+name+'\nHTTP状態: '+status+'\nコード: '+code+'\n内容: '+message;
+}
+
+function notify(message){const el=$('#error');if(el){el.innerHTML=`<div class="err" role="alert">${esc(message)}</div>`;}else alert(message)}
+function setLoading(message){$('#app').innerHTML=`<div class="card"><span class="spin" aria-hidden="true"></span> ${esc(message)}</div>`}
+function updateHeader(){
+  document.body.classList.toggle('qr-print-view',screen==='qrprint');
+  $('#who').textContent=staff?`担当：${staff.name}`:'';
+  $('#logout').hidden=!user;
+  $('#menu-toggle').hidden=!(staff&&staff.role==='admin'&&screen!=='qrprint');
+  closeAdminMenu();
+  const labels=screen==='flow'?['職員','利用者','薬QR','照合','記録']:[];
+  $('#steps').innerHTML=labels.length?labels.map((t,i)=>`<span class="${A.step===i+1?'on':''}" data-number="${i+1}">${t}</span>`).join(''):
+    `<span class="on history-step">${screen==='status'?'服薬状況一覧':screen==='history'?'服薬履歴':screen==='login'?'ログイン':screen==='done'?'記録完了':screen==='admin'?'管理者メニュー':screen==='qrprint'?'QR印刷':'確認'}</span>`;
+}
+function renderLogin(message=''){
+  screen='login';staff=null;user=null;updateHeader();
+  $('#app').innerHTML=`<div class="login-shell"><span class="section-label">職員専用</span><h2>ログイン</h2>
+  <p class="lead">職員IDとパスワードでログインできます。最初に登録した管理者は、従来のメールアドレスでもログインできます。</p>
+  <div class="safety-panel">本番導入準備版です。施設の運用承認・セキュリティ検査が完了するまでは架空データのみを使用してください。</div>
+  <form class="card" id="login-form"><label for="email">職員ID または メールアドレス</label><input type="text" id="email" required maxlength="160" autocomplete="username" placeholder="例：S002 または staff@example.com">
+  <label for="password">パスワード</label><input type="password" id="password" required autocomplete="current-password">
+  <button class="pri" type="submit" id="login-button">ログイン</button><div id="error" role="alert"></div></form>
+  ${message?`<div class="err">${esc(message)}</div>`:''}</div>`;
+  $('#login-form').onsubmit=async e=>{
+    e.preventDefault();let b=$('#login-button');b.disabled=true;b.textContent='確認中…';
+    try {
+      const loginId=$('#email').value.trim();
+      // Supabase Authはメール/電話での認証なので、職員IDを専用の内部エイリアスに変換する。
+      // これはログイン用の内部識別子であり、メールは送信しない。
+      const loginMail=/^S[0-9]{3,8}$/i.test(loginId)?loginId.toLowerCase()+'@staff.medcheck.example':loginId;
+      if(!loginMail.includes('@')){notify('職員ID（例：S002）またはメールアドレスを入力してください。');b.disabled=false;b.textContent='ログイン';return;}
+      const {error}=await client.auth.signInWithPassword({email:loginMail,password:$('#password').value});
+      if(error){
+        notify(safeAuthError(error));
+        b.disabled=false;b.textContent='ログイン';return;
+      }
+      const {data:whoData,error:whoError}=await client.auth.getUser();
+      if(whoError)throw whoError;
+      if(whoData?.user?.app_metadata?.medcheck_must_change_password===true)renderInitialPasswordChange();
+      else await boot();
+    } catch (e) {
+      notify(safeAuthError(e));
+      b.disabled=false;b.textContent='ログイン';
+    }
+  };
+}
+function renderBlocked(message){screen='blocked';updateHeader();$('#app').innerHTML=`<h2>利用権限を確認できません</h2><div class="err">${esc(message)}</div><p class="lead">管理者に職員アカウントの紐付けと有効状態を確認してもらってください。</p><button id="retry">再確認する</button>`;$('#retry').onclick=boot}
+async function paginate(table,fields,decorate){
+  let all=[];const PAGE=400;
+  for(let from=0;from<10000;from+=PAGE){
+    let query=decorate(client.from(table).select(fields)).range(from,from+PAGE-1);
+    let {data,error}=await query;
+    if(error)throw error;
+    all.push(...(data||[]));
+    if((data||[]).length<PAGE)return all;
+  }
+  throw new Error('データが多すぎるため表示を中断しました。ページ分割が必要です。');
+}
+async function loadMaster(){
+  const [staffRows,resRows,medRows,rxRows]=await Promise.all([
+    paginate('staff','id,name,role,is_active,auth_user_id',q=>q.order('id')),
+    paginate('residents','id,name,kana,room,is_active',q=>q.order('id')),
+    paginate('medicines','id,name,shape,note,strength,is_active',q=>q.order('id')),
+    paginate('prescriptions','id,resident_id,medicine_id,dose,time_slot,start_date,end_date,is_active',q=>q.order('id'))
+  ]);
+  C.staff=staffRows; C.residents=resRows; C.medicines=medRows;
+  C.prescriptions=rxRows.map(x=>({id:x.id,residentId:x.resident_id,medicineId:x.medicine_id,
+    dose:x.dose,timeSlot:x.time_slot,startDate:x.start_date,endDate:x.end_date,isActive:x.is_active}));
+  await loadQRGroups();
+}
+async function loadQRGroups(){
+  // 03 SQL未適用のときは従来の処方・履歴画面を維持するが、印刷と一包化は止める。
+  let gr,items;
+  try{
+    gr=await paginate('medcheck_qr_groups','id,resident_id,time_slot,start_date,end_date,is_active,created_at',q=>q.order('id'));
+    items=await paginate('medcheck_qr_group_items','group_id,prescription_id',q=>q.order('group_id'));
+  }catch(e){
+    if(['42P01','PGRST205'].includes(e?.code)||e?.status===404){
+      C.qrReady=false;C.qrGroups=[];C.qrGroupItems=[];return;
+    }
+    throw e;
+  }
+  C.qrGroups=gr.map(x=>({id:x.id,residentId:x.resident_id,timeSlot:x.time_slot,
+    startDate:x.start_date,endDate:x.end_date,isActive:x.is_active,createdAt:x.created_at}));
+  C.qrGroupItems=items.map(x=>({groupId:x.group_id,prescriptionId:x.prescription_id}));
+  C.qrReady=true;
+}
+function groupRxs(g){return C.qrGroupItems.filter(x=>x.groupId===g.id).map(x=>repo.getPrescription(x.prescriptionId))}
+function isGroupedPrescription(id){return C.qrGroupItems.some(i=>i.prescriptionId===id&&C.qrGroups.some(g=>g.id===i.groupId&&g.isActive))}
+function safePackage(g,date){
+  const r=repo.getResident(g.residentId),rxs=groupRxs(g);
+  return !!g.isActive&&!!r?.is_active&&g.startDate<=date&&date<=g.endDate&&rxs.length>=2&&
+    rxs.every(rx=>rx&&rx.isActive&&rx.residentId===g.residentId&&rx.timeSlot===g.timeSlot&&
+      rx.startDate===g.startDate&&rx.endDate===g.endDate&&rx.startDate<=date&&date<=rx.endDate&&
+      !!repo.getMedicine(rx.medicineId)?.is_active);
+}
+async function loadLogs(date){
+  const logs=await paginate('medication_logs','id,prescription_id,staff_id,date,time_slot,status,reason,created_at',q=>q.eq('date',date).order('created_at',{ascending:false}));
+  const ids=logs.map(l=>l.id),corr=[];
+  for(let i=0;i<ids.length;i+=40){
+    const chunk=ids.slice(i,i+40);
+    const result=await paginate('medication_log_corrections','id,revision,medication_log_id,previous_status,new_status,correction_reason,corrected_by_staff_id,corrected_at',q=>q.in('medication_log_id',chunk).order('revision'));
+    corr.push(...result);
+  }
+  C.logs=logs.map(l=>{let rx=repo.getPrescription(l.prescription_id);return {id:l.id,prescriptionId:l.prescription_id,staffId:l.staff_id,date:l.date,timeSlot:l.time_slot,status:l.status,reason:l.reason,createdAt:l.created_at,residentId:rx?.residentId,medicineId:rx?.medicineId}});
+  C.corrections=corr.map(c=>({id:c.id,revision:c.revision,logId:c.medication_log_id,fromStatus:c.previous_status,toStatus:c.new_status,reason:c.correction_reason,staffId:c.corrected_by_staff_id,createdAt:c.corrected_at}));
+  C.date=date;
+}
+async function boot(){
+  stopScan();setLoading('ログイン状態と利用権限を確認しています');
+  try{
+    // 初回アクセスなどログインセッションがないときは、エラー画面ではなくログイン画面へ。
+    const {data:sessionData,error:sessionError}=await client.auth.getSession();
+    if(sessionError){
+      if(/session missing/i.test(sessionError.message||'')){user=null;staff=null;renderLogin();return}
+      throw sessionError;
+    }
+    if(!sessionData?.session){user=null;staff=null;renderLogin();return}
+    // セッションの有無を確認した後、サーバーでユーザーを検証する。
+    const {data:{user:current},error}=await client.auth.getUser();
+    if(error){
+      if(/session missing/i.test(error.message||'')){user=null;staff=null;renderLogin('ログイン状態が確認できませんでした。もう一度ログインしてください。');return}
+      throw error;
+    }
+    if(!current){user=null;staff=null;renderLogin();return}
+    user=current;
+    if(current.app_metadata?.medcheck_must_change_password===true){renderInitialPasswordChange();return;}
+    const res=await client.from('staff').select('id,name,role,is_active,auth_user_id').eq('auth_user_id',user.id).eq('is_active',true).maybeSingle();
+    if(res.error)throw res.error;
+    if(!res.data){staff=null;renderBlocked('ログインアカウントに有効な職員情報が関連付けられていません。');return}
+    staff=res.data;
+    await loadMaster(); await loadLogs(todayJST());
+    A.step=1;screen='flow';renderHome();
+  }catch(e){renderBlocked('データの読み込みに失敗しました。通信状態、SQL設定と権限を確認してください。\n'+errorMessage(e))}
+}
+function stopScan(){++scanToken;cancelAnimationFrame(scanRaf);scanRaf=0;if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null}const v=$('#video');if(v)v.srcObject=null}
+function home(){stopScan();screen='flow';A.step=1;A.slot=currentSlot();A.resident=null;A.rx=null;renderHome()}
+function renderHome(){screen='flow';A.step=1;updateHeader();
+  $('#app').innerHTML=`<span class="section-label">STEP 01 / 職員</span><h2>担当職員を確認</h2>
+  <p class="lead">職員はログイン情報で確定しています。ほかの職員へ切り替える場合はログアウトしてください。</p>
+  <div class="staff-field"><label class="staff-field-label">現在の担当職員</label>
+  <div class="card" style="margin-bottom:8px"><div class="big" style="font-size:21px">${esc(staff.name)}</div><div class="hint">職員ID：${esc(staff.id)} ／ ${staff.role==='admin'?'管理者':'一般職員'}</div></div>
+  <button id="staff-toggle" type="button" class="staff-dropdown-toggle" aria-expanded="false" aria-controls="staff-roster"><span>職員一覧を確認する（閲覧のみ）</span><span class="staff-chevron" aria-hidden="true"></span></button>
+  <div id="staff-roster" class="staff-dropdown-list staff-roster" hidden>${C.staff.filter(x=>x.is_active).map(x=>`<div class="${x.id===staff.id?'current':''}">${esc(x.name)}${x.id===staff.id?'（ログイン中）':''}</div>`).join('')}</div></div>
+  <div class="card"><h3>服薬の時間帯</h3><div class="grid">${SLOTS.map(t=>`<button type="button" data-slot="${t}" class="${A.slot===t?'sel':''}">${t}</button>`).join('')}</div>
+  <p class="hint">時間帯は確認して選んでください。サーバー側でも処方の時間帯と照合します。</p></div>
+  <button class="pri" id="next">利用者選択へ進む</button>
+  <button id="show-status">服薬状況一覧を見る</button><button id="show-history">服薬履歴を見る</button>
+  ${staff.role==='admin'?'<p class="admin-home-hint">管理者の登録・QR作成・職員管理は、右上の「≡」から開けます。</p>':''}`;
+  $('#staff-toggle').onclick=()=>{const b=$('#staff-toggle'),list=$('#staff-roster');list.hidden=!list.hidden;b.setAttribute('aria-expanded',String(!list.hidden))};
+  document.querySelectorAll('[data-slot]').forEach(b=>b.onclick=()=>{A.slot=b.dataset.slot;renderHome()});
+  $('#next').onclick=renderResidents;$('#show-status').onclick=()=>showStatus();$('#show-history').onclick=()=>showHistory();
+}
+
+// 管理者だけが開けるナビゲーション。一般職員にはボタン自体を表示しない。
+function closeAdminMenu(){
+  const menu=$('#admin-drawer'),overlay=$('#admin-menu-overlay'),toggle=$('#menu-toggle');
+  if(menu)menu.hidden=true;if(overlay)overlay.hidden=true;
+  if(toggle){toggle.setAttribute('aria-expanded','false');toggle.setAttribute('aria-label','管理者メニューを開く')}
+}
+function openAdminMenu(){
+  if(staff?.role!=='admin')return;
+  const menu=$('#admin-drawer'),overlay=$('#admin-menu-overlay'),toggle=$('#menu-toggle');
+  menu.hidden=false;overlay.hidden=false;toggle.setAttribute('aria-expanded','true');toggle.setAttribute('aria-label','管理者メニューを閉じる');
+  $('#drawer-close').focus();
+}
+function goAdminMenu(target){
+  closeAdminMenu();
+  if(staff?.role!=='admin')return;
+  if(target==='home')home();
+  else if(target==='status')showStatus();
+  else if(target==='history')showHistory();
+  else if(target==='qr')renderQRAdmin();
+  else if(target==='staff')renderStaffAdmin();
+  else if(['resident','medicine','prescription'].includes(target))renderAdmin(target);
+}
+
+// 管理画面: 画面の表示・非表示に加え、DBのRPCで管理者権限を毎回確認する。
+let adminBusy=false;
+const ADMIN_META={
+  resident:{title:'利用者',prefix:'R',rows:()=>C.residents},
+  medicine:{title:'薬剤',prefix:'M',rows:()=>C.medicines},
+  prescription:{title:'処方',prefix:'P',rows:()=>C.prescriptions}
+};
+function nextAdminId(kind){
+  const a=ADMIN_META[kind];const n=Math.max(0,...a.rows().map(r=>{
+    const m=String(r.id).match(new RegExp('^'+a.prefix+'(\\d+)$'));
+    return m?Number(m[1]):0;
+  }));
+  return a.prefix+String(n+1).padStart(3,'0');
+}
+function adminOptions(kind){
+  return ADMIN_META[kind].rows().filter(x=>kind==='prescription'?x.isActive:x.is_active).map(x=>{
+    const label=kind==='resident'?x.name:kind==='medicine'?x.name:
+      [x.id,repo.getResident(x.residentId)?.name||x.residentId,repo.getMedicine(x.medicineId)?.name||x.medicineId].join(' / ');
+    return `<option value="${esc(x.id)}">${esc(x.id+' / '+label)}</option>`;
+  }).join('');
+}
+function adminForm(kind){
+  const id=nextAdminId(kind);
+  if(kind==='resident')return `
+    <label for="am-id">利用者ID（重複不可）</label><input id="am-id" name="id" required pattern="R[0-9]{3,8}" maxlength="9" value="${esc(id)}" autocomplete="off">
+    <label for="am-name">利用者名</label><input id="am-name" name="name" required maxlength="100" autocomplete="off" placeholder="例：テスト利用者B">
+    <label for="am-kana">フリガナ（任意）</label><input id="am-kana" name="kana" maxlength="100" autocomplete="off">
+    <label for="am-room">部屋番号（任意）</label><input id="am-room" name="room" maxlength="50" autocomplete="off" placeholder="例：102">`;
+  if(kind==='medicine')return `
+    <label for="am-id">薬剤ID（重複不可）</label><input id="am-id" name="id" required pattern="M[0-9]{3,8}" maxlength="9" value="${esc(id)}" autocomplete="off">
+    <label for="am-name">薬剤名</label><input id="am-name" name="name" required maxlength="150" autocomplete="off" placeholder="例：テスト薬B">
+    <label for="am-shape">剤形（任意）</label><input id="am-shape" name="shape" maxlength="100" autocomplete="off" placeholder="例：錠剤">
+    <label for="am-strength">規格（任意）</label><input id="am-strength" name="strength" maxlength="100" autocomplete="off" placeholder="例：5mg">
+    <label for="am-note">備考（任意）</label><textarea id="am-note" name="note" maxlength="500" rows="2"></textarea>`;
+  return `
+    <label for="am-id">処方ID（QRに入れる文字）</label><input id="am-id" name="id" required pattern="P[0-9]{3,8}" maxlength="9" value="${esc(id)}" autocomplete="off">
+    <p class="mini">例：P002 を登録したら、管理者メニューの「QR作成・印刷」から出力できます。Excelは不要です。</p>
+    <label for="am-res">利用者</label><select id="am-res" name="resident_id" required><option value="">選択してください</option>${adminOptions('resident')}</select>
+    <label for="am-med">薬剤</label><select id="am-med" name="medicine_id" required><option value="">選択してください</option>${adminOptions('medicine')}</select>
+    <label for="am-dose">1回量</label><input id="am-dose" name="dose" required maxlength="100" autocomplete="off" placeholder="例：1錠">
+    <label for="am-slot">服薬時間帯</label><select id="am-slot" name="time_slot" required><option value="">選択してください</option>${SLOTS.map(s=>`<option>${s}</option>`).join('')}</select>
+    <label for="am-start">開始日</label><input id="am-start" name="start_date" type="date" required value="${todayJST()}">
+    <label for="am-end">終了日</label><input id="am-end" name="end_date" type="date" required>
+    <p class="mini">テスト版では終了日も必須です。処方内容は保存後に書き換えず、変更する場合は旧処方を無効化して新しい処方IDを登録してください。</p>`;
+}
+function renderAdmin(kind='resident',info=''){
+  if(!staff||staff.role!=='admin'){home();return;}
+  if(!ADMIN_META[kind])kind='resident';
+  stopScan();screen='admin';updateHeader();
+  const rows=ADMIN_META[kind].rows();
+  const sorted=rows.slice().sort((a,b)=>{
+    const ae=kind==='prescription'?a.isActive:a.is_active;
+    const be=kind==='prescription'?b.isActive:b.is_active;
+    return Number(be)-Number(ae)||String(a.id).localeCompare(String(b.id),'ja');
+  });
+  $('#app').innerHTML=`<span class="section-label">管理者専用</span><h2>利用者・薬・処方の管理</h2>
+    <p class="lead">管理者アカウントで登録・無効化できます。ほかの管理機能は右上の「≡」から切り替えられます。</p>
+    <div class="safety-panel">本番導入前の検証中です。施設の権限・監査・業務手順の検証が終わるまで架空データのみで操作してください。削除は行わず、過去の記録を残して無効化します。</div>
+    <div class="admin-tabs">${Object.entries(ADMIN_META).map(([key,v])=>`<button type="button" class="${kind===key?'active':''}" data-admin-tab="${key}">${v.title}</button>`).join('')}</div>
+    ${info?`<div class="info-panel" role="status">${esc(info)}</div>`:''}
+    <form id="admin-create" class="card admin-form"><h3>新しい${ADMIN_META[kind].title}を登録</h3>
+    ${adminForm(kind)}<div id="error" role="alert"></div>
+    <button type="submit" class="pri" id="admin-create-btn">内容を確認して新規登録</button></form>
+    <h3>登録済みの${ADMIN_META[kind].title}（${rows.length}件）</h3>
+    <p class="admin-notice">「無効化」は履歴を残して確認対象から外します。利用者・薬に有効な処方があるときは、先にその処方を無効化してください。</p>
+    <div class="admin-list">${sorted.map(x=>{
+      const active=kind==='prescription'?x.isActive:x.is_active;
+      const title=kind==='prescription'?`${x.id} / ${repo.getResident(x.residentId)?.name||x.residentId} / ${repo.getMedicine(x.medicineId)?.name||x.medicineId}`:`${x.id} / ${x.name}`;
+      const sub=kind==='resident'?`${x.kana||''} ${x.room?' / '+x.room+'号室':''}`:kind==='medicine'?`${x.strength||''} ${x.shape||''}`:
+        `${x.dose} / ${x.timeSlot} / ${x.startDate} ～ ${x.endDate||'終了日なし'}`;
+      return `<div class="admin-entry ${active?'':'off'}"><div class="admin-state">${active?'有効':'無効'}</div><b>${esc(title)}</b><div class="admin-sub">${esc(sub)}</div>
+        <button type="button" class="${active?'ng':''}" data-admin-id="${esc(x.id)}" data-admin-active="${active?'false':'true'}">${active?'無効化する':'再有効化する'}</button></div>`;
+    }).join('')||'<div class="status-empty">まだ登録がありません。</div>'}</div>
+    <button id="admin-refresh">サーバーの最新情報に更新</button><button id="admin-back">服薬確認へ戻る</button>`;
+  document.querySelectorAll('[data-admin-tab]').forEach(b=>b.onclick=()=>renderAdmin(b.dataset.adminTab));
+  document.querySelectorAll('[data-admin-id]').forEach(b=>b.onclick=()=>adminSetActive(kind,b.dataset.adminId,b.dataset.adminActive==='true'));
+  $('#admin-create').onsubmit=e=>adminCreate(e,kind);
+  $('#admin-back').onclick=home;
+  $('#admin-refresh').onclick=async()=>{
+    if(adminBusy)return;
+    const b=$('#admin-refresh');b.disabled=true;b.textContent='更新中…';
+    try{await loadMaster();renderAdmin(kind,'最新の登録情報を取得しました。')}
+    catch(e){notify('最新情報を読み込めませんでした。 '+errorMessage(e));b.disabled=false;b.textContent='サーバーの最新情報に更新'}
+  };
+}
+async function adminCreate(e,kind){
+  e.preventDefault();if(adminBusy||staff?.role!=='admin')return;
+  const form=$('#admin-create');if(!form.reportValidity())return;
+  const values=Object.fromEntries(new FormData(form).entries());
+  let summary='';
+  if(kind==='resident')summary=`${values.id} / ${values.name}`;
+  else if(kind==='medicine')summary=`${values.id} / ${values.name}`;
+  else{
+    if(values.end_date<values.start_date){notify('終了日は開始日以降にしてください。');return;}
+    const r=repo.getResident(values.resident_id),m=repo.getMedicine(values.medicine_id);
+    summary=`${values.id}\n利用者：${r?.name||values.resident_id}\n薬剤：${m?.name||values.medicine_id}\n量：${values.dose}\n時間帯：${values.time_slot}\n期間：${values.start_date} ～ ${values.end_date}`;
+  }
+  if(!confirm(`次の${ADMIN_META[kind].title}をサーバーに新規登録します。\n\n${summary}\n\n内容を確認しましたか？`))return;
+  adminBusy=true;const b=$('#admin-create-btn');b.disabled=true;b.textContent='登録中…';
+  try{
+    const {data,error}=await client.rpc('medcheck_admin_create',{p_kind:kind,p_values:values});
+    if(error)throw error;
+    if(data?.result!=='created')throw new Error('登録の完了を確認できませんでした。');
+    await loadMaster();renderAdmin(kind,`${data.id} を登録しました。`);
+  }catch(err){
+    let msg=errorMessage(err);
+    if(err?.code==='23505')msg='このIDはすでに使われています。別のIDにしてください。';
+    if(err?.code==='PGRST202'||err?.status===404)msg='Supabaseの管理機能SQLがまだ設定されていない可能性があります。付属の 02_管理者登録機能.sql を確認してください。';
+    notify('登録を確認できませんでした。重複登録を防ぐため、再試行前に一覧を更新してください。\n'+msg);
+    if(b){b.disabled=false;b.textContent='内容を確認して新規登録'}
+  }finally{adminBusy=false;}
+}
+async function adminSetActive(kind,id,active){
+  if(adminBusy||staff?.role!=='admin')return;
+  const row=ADMIN_META[kind].rows().find(x=>x.id===id);if(!row)return;
+  const label=kind==='prescription'?`${id} / ${repo.getResident(row.residentId)?.name||row.residentId}`:`${id} / ${row.name}`;
+  const verb=active?'再有効化':'無効化';
+  if(!confirm(`${ADMIN_META[kind].title}：${label}\n\n${verb}しますか？\n※過去の服薬記録は削除されません。`))return;
+  adminBusy=true;const b=[...document.querySelectorAll('[data-admin-id]')].find(x=>x.dataset.adminId===id);
+  if(b){b.disabled=true;b.textContent='変更中…'}
+  try{
+    const {data,error}=await client.rpc('medcheck_admin_set_active',{p_kind:kind,p_id:id,p_active:active});
+    if(error)throw error;
+    if(!['deactivated','reactivated','unchanged'].includes(data?.result))throw new Error('変更完了を確認できませんでした。');
+    await loadMaster();renderAdmin(kind,`${id} を${verb}しました。`);
+  }catch(err){
+    notify('変更を確認できませんでした。再試行前に一覧を更新してください。\n'+errorMessage(err));
+    if(b){b.disabled=false;b.textContent=active?'再有効化する':'無効化する'}
+  }finally{adminBusy=false;}
+}
+// アプリ内QR発行（外部QR APIなし）。QRにはP/G番号＋有効開始日・終了日を格納。
+function qrSvg(code){
+  const qr=new QR_LOCAL.QRCode(0,QR_LOCAL.level.H);qr.addData(code);qr.make();
+  const size=qr.getModuleCount(),quiet=4,full=size+quiet*2,paths=[];
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++)if(qr.isDark(y,x))paths.push(`M${x+quiet} ${y+quiet}h1v1h-1z`);
+  return `<svg viewBox="0 0 ${full} ${full}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(code)}のQR"><rect width="100%" height="100%" fill="#fff"/><path d="${paths.join('')}" fill="#000"/></svg>`;
+}
+function qrPNG(code){
+  const q=new QR_LOCAL.QRCode(0,QR_LOCAL.level.H);q.addData(code);q.make();
+  const n=q.getModuleCount(),quiet=4,px=15,total=n+quiet*2;
+  const cv=document.createElement('canvas');cv.width=total*px;cv.height=total*px+94;
+  const ctx=cv.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.fillStyle='#000';for(let y=0;y<n;y++)for(let x=0;x<n;x++)if(q.isDark(y,x))ctx.fillRect((x+quiet)*px,(y+quiet)*px,px,px);
+  const period=/^MC2\|(\d{4}-\d{2}-\d{2})\|(\d{4}-\d{2}-\d{2})\|([PG][0-9]{3,8})$/.exec(code);
+  ctx.textAlign='center';ctx.fillStyle='#111';
+  ctx.font='bold 30px sans-serif';ctx.fillText(period?period[3]:code,cv.width/2,total*px+38);
+  if(period){ctx.font='19px sans-serif';ctx.fillText(period[1]+' ～ '+period[2],cv.width/2,total*px+74);}
+  return cv;
+}
+function downloadQrPNG(code){
+  const canvas=qrPNG(code);
+  canvas.toBlob(blob=>{
+    if(!blob){notify('PNG画像を作成できませんでした');return}
+    const p=/^MC2\|(\d{4}-\d{2}-\d{2})\|(\d{4}-\d{2}-\d{2})\|([PG][0-9]{3,8})$/.exec(code);
+    const name=p?`${p[3]}_${p[1]}_${p[2]}`:code.replace(/[^0-9A-Za-z_-]/g,'_');
+    const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`服薬QR_${name}.png`;
+    document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200);
+  },'image/png');
+}
+
+// 職員ID（メール不要）の登録・無効化・パスワード再発行。
+// すべてEdge Functionが管理者権限を検証し、ブラウザに秘密のAPIキーは渡さない。
+function nextStaffId(){
+  const max=Math.max(0,...C.staff.map(s=>{const m=String(s.id).match(/^S(\d+)$/);return m?Number(m[1]):0}));
+  return 'S'+String(max+1).padStart(3,'0');
+}
+async function callStaffAdmin(body){
+  if(!client)throw new Error('ログインが必要です。');
+  const {data,error}=await client.functions.invoke('medcheck-staff-admin',{body});
+  if(error){
+    // HTTPエラー応答の日本語メッセージを取り出す（APIキー・認証情報は表示しない）
+    let detail='';
+    try{const response=error.context;if(response&&typeof response.json==='function'){const raw=await response.json();detail=String(raw?.error||'').slice(0,180)}}catch(_){/* ignore */}
+    const status=Number(error.context?.status)||0;
+    if(status===404)throw new Error('職員管理用の関数 medcheck-staff-admin が見つかりません（HTTP 404）。SupabaseのEdge Functions一覧に、この名前があるか確認してください。');
+    if(status===401)throw new Error('職員管理用の関数に認証できません（HTTP 401）。再ログインとEdge FunctionのJWT検証設定を確認してください。');
+    throw new Error(detail||'職員管理のサーバー機能を呼び出せません。Edge Functionの設定を確認してください。'+(status?'（HTTP '+status+'）':''));
+  }
+  if(!data?.ok)throw new Error(data?.error||'職員管理操作を確認できませんでした。');
+  return data;
+}
+// 職員管理は一覧、登録、詳細、履歴を独立した画面として表示する。
+function staffHeading(title,sub=''){
+  return `<div class="staff-back-heading"><button type="button" class="staff-back-arrow" id="staff-page-back" aria-label="職員一覧に戻る">←</button><div><span class="section-label">${esc(sub||'職員管理')}</span><h2>${esc(title)}</h2></div></div>`;
+}
+function renderStaffAdmin(message=''){
+  if(staff?.role!=='admin'){home();return;}
+  stopScan();screen='admin';updateHeader();
+  const rows=C.staff.slice().sort((a,b)=>Number(b.is_active)-Number(a.is_active)||a.id.localeCompare(b.id,'ja'));
+  $('#app').innerHTML=`<span class="section-label">管理者専用</span><h2>職員管理</h2>
+    <p class="lead">職員名を押すと、別の画面で詳細設定ができます。</p>
+    ${message?`<div class="info-panel" role="status">${esc(message)}</div>`:''}
+    <button type="button" id="staff-add-new" class="pri">＋ 一般職員を新規登録</button>
+    <div class="staff-search-wrap"><label for="staff-search">職員を検索</label><input type="search" id="staff-search" placeholder="職員名または職員ID" autocomplete="off"></div>
+    <div class="staff-directory" id="staff-directory">
+    ${rows.map(x=>`<button type="button" class="staff-directory-row" data-staff-detail="${esc(x.id)}" data-staff-search="${esc(x.id+' '+x.name)}">
+      <span class="staff-directory-copy"><strong>${esc(x.name)}</strong><small>${esc(x.id)} ・ ${x.role==='admin'?'管理者':'一般職員'}${x.id===staff.id?' ・ ログイン中':''}</small></span>
+      <span class="staff-status-label ${x.is_active?'':'is-off'}">${x.is_active?'有効':'無効'}</span><span class="staff-directory-next" aria-hidden="true">›</span>
+    </button>`).join('')||'<div class="info-panel">登録済みの職員はいません。</div>'}</div>
+    <p class="staff-detail-notice">新規登録の権限は「一般職員」に固定です。管理者権限の変更はこの画面ではできません。</p>
+    <button id="staff-refresh" type="button">職員一覧を更新</button><button id="staff-back" type="button">服薬確認へ戻る</button>`;
+  $('#staff-add-new').onclick=()=>renderStaffCreate();
+  document.querySelectorAll('[data-staff-detail]').forEach(b=>b.onclick=()=>renderStaffDetail(b.dataset.staffDetail));
+  $('#staff-search').oninput=()=>{
+    const q=$('#staff-search').value.trim().toLocaleLowerCase();
+    document.querySelectorAll('[data-staff-search]').forEach(b=>{b.hidden=!b.dataset.staffSearch.toLocaleLowerCase().includes(q)});
+  };
+  $('#staff-refresh').onclick=async()=>{
+    if(adminBusy)return;adminBusy=true;
+    try{await loadMaster();renderStaffAdmin('最新の職員情報を読み込みました。')}
+    catch(e){notify('職員情報の取得に失敗しました。 '+errorMessage(e))}
+    finally{adminBusy=false}
+  };
+  $('#staff-back').onclick=home;
+}
+function renderStaffCreate(message=''){
+  if(staff?.role!=='admin'){home();return}
+  stopScan();screen='admin';updateHeader();
+  $('#app').innerHTML=`${staffHeading('新規職員登録','管理者専用 / 職員管理')}
+    <div class="safety-panel">新しい職員は一般職員として登録されます。職員本人へのパスワードの受け渡しは安全な方法で行ってください。</div>
+    ${message?`<div class="info-panel" role="status">${esc(message)}</div>`:''}
+    <form id="staff-admin-create" class="card admin-form">
+      <label for="staff-new-id">職員ID（自動候補）</label><input id="staff-new-id" name="id" required pattern="S[0-9]{3,8}" maxlength="9" value="${esc(nextStaffId())}" autocomplete="off">
+      <label for="staff-new-name">職員名</label><input id="staff-new-name" name="name" required maxlength="100" autocomplete="off" placeholder="例：テスト職員B">
+      <p class="hint">権限：一般職員（固定）／招待メールなし／初回ログインでパスワード変更</p>
+      <div id="error" role="alert"></div>
+      <button class="pri" type="submit" id="staff-create-button">登録して初期パスワードを発行</button>
+    </form><div id="staff-secret-holder"></div>`;
+  $('#staff-page-back').onclick=()=>renderStaffAdmin();
+  $('#staff-admin-create').onsubmit=createStaffFromForm;
+}
+function renderStaffDetail(id,message=''){
+  if(staff?.role!=='admin'){home();return}
+  const row=C.staff.find(x=>x.id===id);
+  if(!row){renderStaffAdmin('該当する職員が見つかりません。一覧を更新してください。');return}
+  stopScan();screen='admin';updateHeader();
+  const editable=row.role==='staff';
+  $('#app').innerHTML=`${staffHeading(row.name,'管理者専用 / 職員詳細設定')}
+    ${message?`<div class="info-panel" role="status">${esc(message)}</div>`:''}
+    <div class="staff-mini-profile">
+      <div class="staff-profile-row"><span>職員ID</span><span>${esc(row.id)}（変更不可）</span></div>
+      <div class="staff-profile-row"><span>権限</span><span>${editable?'一般職員':'管理者'}</span></div>
+      <div class="staff-profile-row"><span>利用状態</span><span class="staff-status-label ${row.is_active?'':'is-off'}">${row.is_active?'有効':'無効'}</span></div>
+      <div class="staff-profile-row"><span>ログイン</span><span>${editable?'職員IDとパスワード':'既存の管理者アカウント'}</span></div>
+    </div>
+    ${editable?`<form id="staff-name-form" class="card admin-form staff-name-edit">
+      <h3>職員名を変更</h3><label for="staff-edit-name">職員名</label>
+      <input id="staff-edit-name" required maxlength="100" value="${esc(row.name)}" autocomplete="off">
+      <div id="error" role="alert"></div>
+      <button type="submit" class="pri" id="staff-name-save">名前を保存する</button>
+    </form>
+    <div class="card">
+      <h3>アカウント設定</h3>
+      <p class="hint">無効化しても過去の服薬記録は削除されません。利用停止の反映はテスト環境で必ず確認してください。</p>
+      <div class="staff-detail-actions">
+        <button type="button" id="staff-active-toggle" class="${row.is_active?'ng':''}">${row.is_active?'職員を無効化する':'職員を再有効化する'}</button>
+        <button type="button" id="staff-reset-password">初期パスワードを再発行</button>
+      </div>
+      <p class="hint">パスワードの再発行は本人確認後に行ってください。旧パスワードは使えなくなります。</p>
+    </div>`:`<div class="info-panel">管理者アカウントの変更・停止は、この画面では行えません。誤って管理者を停止しないための設定です。</div>`}
+    <div id="staff-secret-holder"></div>
+    <button type="button" id="staff-open-history">この職員の操作履歴を見る　›</button>
+    <button type="button" id="staff-detail-to-list">← 職員一覧に戻る</button>`;
+  $('#staff-page-back').onclick=()=>renderStaffAdmin();
+  $('#staff-detail-to-list').onclick=()=>renderStaffAdmin();
+  $('#staff-open-history').onclick=()=>renderStaffHistory(id);
+  if(editable){
+    $('#staff-name-form').onsubmit=e=>saveStaffName(e,id);
+    $('#staff-active-toggle').onclick=()=>setStaffActive(id,!row.is_active);
+    $('#staff-reset-password').onclick=()=>resetStaffPassword(id);
+  }
+}
+const STAFF_OP_LABELS={create:'新規登録',deactivate:'無効化',reactivate:'再有効化',reset_password:'パスワード再発行',password_changed:'初回パスワード変更',update_name:'職員名の変更'};
+async function renderStaffHistory(id){
+  if(staff?.role!=='admin'){home();return}
+  const row=C.staff.find(x=>x.id===id);
+  if(!row){renderStaffAdmin();return}
+  stopScan();screen='admin';updateHeader();
+  $('#app').innerHTML=`${staffHeading('操作履歴','管理者専用 / '+row.name)}<div class="card">履歴を読み込んでいます…</div>`;
+  $('#staff-page-back').onclick=()=>renderStaffDetail(id);
+  try{
+    const result=await callStaffAdmin({action:'history',id});
+    const records=Array.isArray(result.history)?result.history:[];
+    $('#app').innerHTML=`${staffHeading('操作履歴','管理者専用 / '+row.name)}
+      <p class="lead">${esc(row.name)}（${esc(id)}）に関する管理操作の直近30件です。過去の服薬記録とは別の履歴です。</p>
+      <div class="staff-history-list">${records.map(h=>{
+        const when=new Date(h.performed_at);
+        const at=Number.isNaN(when.getTime())?'日時不明':when.toLocaleString('ja-JP');
+        const details=h.operation==='update_name'&&h.details?`<div class="history-change">${esc(String(h.details.before_name||''))} → ${esc(String(h.details.after_name||''))}</div>`:'';
+        return `<div class="staff-history-item"><div class="history-label">${esc(STAFF_OP_LABELS[h.operation]||h.operation)}</div><div class="history-meta">${esc(at)} ／ 操作した職員：${esc(h.actor_staff_id)}</div>${details}</div>`;
+      }).join('')||'<div class="info-panel">記録がありません。</div>'}</div>
+      <button type="button" id="staff-history-back">← 詳細設定へ戻る</button>`;
+    $('#staff-page-back').onclick=()=>renderStaffDetail(id);
+    $('#staff-history-back').onclick=()=>renderStaffDetail(id);
+  }catch(e){renderStaffDetail(id);notify('操作履歴を取得できませんでした。\n'+errorMessage(e))}
+}
+async function saveStaffName(e,id){
+  e.preventDefault();if(adminBusy||staff?.role!=='admin')return;
+  const row=C.staff.find(x=>x.id===id);if(!row||row.role!=='staff')return;
+  const name=$('#staff-edit-name').value.trim();
+  if(!name||name.length>100){notify('職員名は1〜100文字で入力してください。');return}
+  if(name===row.name){renderStaffDetail(id,'変更はありません。');return}
+  if(!confirm(`${id} の職員名を「${name}」に変更しますか？`))return;
+  adminBusy=true;$('#staff-name-save').disabled=true;
+  try{await callStaffAdmin({action:'update_name',id,name});await loadMaster();renderStaffDetail(id,'職員名を変更し、操作履歴に記録しました。')}
+  catch(e){notify('職員名を保存できませんでした。\n'+errorMessage(e));$('#staff-name-save').disabled=false}
+  finally{adminBusy=false}
+}
+function showOneTimeStaffPassword(id,password,kind){
+  const holder=$('#staff-secret-holder');if(!holder)return;
+  holder.innerHTML=`<div class="initial-password-box" role="status">
+    <h3>${kind==='reset'?'パスワード再発行':'職員登録'}が完了しました</h3>
+    <p><b>職員ID：${esc(id)}</b></p>
+    <label for="staff-secret">初期パスワード（今回のみ表示）</label>
+    <input type="text" id="staff-secret" readonly spellcheck="false" autocomplete="off">
+    <button type="button" id="staff-copy-secret">パスワードをコピー</button>
+    <p class="hint">本人に安全な方法で渡してください。メモの放置・共有アカウント化は避けてください。初回ログインで変更が必要です。</p>
+    <button type="button" id="staff-clear-secret">表示を閉じる</button>
+  </div>`;
+  $('#staff-secret').value=password;
+  $('#staff-copy-secret').onclick=async()=>{
+    try{await navigator.clipboard.writeText($('#staff-secret').value);$('#staff-copy-secret').textContent='コピーしました'}
+    catch(_){$('#staff-secret').select();notify('自動コピーできませんでした。パスワードの文字列を選択してコピーしてください。')}
+  };
+  $('#staff-clear-secret').onclick=()=>{holder.replaceChildren()};
+}
+async function createStaffFromForm(e){
+  e.preventDefault();if(adminBusy||staff?.role!=='admin')return;
+  const form=$('#staff-admin-create');if(!form.reportValidity())return;
+  const id=$('#staff-new-id').value.trim().toUpperCase(),name=$('#staff-new-name').value.trim();
+  if(!/^S\d{3,8}$/.test(id)||!name){notify('職員IDと氏名を確認してください。');return}
+  if(!confirm(`${id} / ${name}\n権限：一般職員（固定）\n\n職員を登録し、初期パスワードを発行しますか？`))return;
+  adminBusy=true;const button=$('#staff-create-button');button.disabled=true;button.textContent='登録中…';
+  try{
+    const data=await callStaffAdmin({action:'create',id,name});
+    await loadMaster();renderStaffDetail(id,`${id} を登録しました。初期パスワードは今回だけ表示されます。`);showOneTimeStaffPassword(id,data.initial_password,'create');
+  }catch(e){notify('登録できませんでした。再試行前に一覧を更新してください。\n'+errorMessage(e));button.disabled=false;button.textContent='登録して初期パスワードを発行'}
+  finally{adminBusy=false}
+}
+async function setStaffActive(id,active){
+  if(adminBusy||staff?.role!=='admin')return;
+  const row=C.staff.find(x=>x.id===id);if(!row||row.role!=='staff')return;
+  if(!confirm(`${id} / ${row.name}\n${active?'再有効化':'無効化'}しますか？\n過去の記録は残ります。`))return;
+  adminBusy=true;
+  try{await callStaffAdmin({action:'set_active',id,active});await loadMaster();renderStaffDetail(id,`${id} を${active?'再有効化':'無効化'}しました。`)}
+  catch(e){notify('操作に失敗しました。\n'+errorMessage(e))}finally{adminBusy=false}
+}
+async function resetStaffPassword(id){
+  if(adminBusy||staff?.role!=='admin')return;
+  const row=C.staff.find(x=>x.id===id);if(!row||row.role!=='staff')return;
+  if(!confirm(`${id} / ${row.name}\n\n本人確認が完了した場合だけ再発行してください。\n旧パスワードは使えなくなります。続けますか？`))return;
+  adminBusy=true;
+  try{const data=await callStaffAdmin({action:'reset_password',id});renderStaffDetail(id,`${id} のパスワードを再発行しました。`);showOneTimeStaffPassword(id,data.initial_password,'reset')}
+  catch(e){notify('パスワード再発行に失敗しました。\n'+errorMessage(e))}finally{adminBusy=false}
+}
+function renderInitialPasswordChange(){
+  stopScan();screen='setup';updateHeader();
+  $('#app').innerHTML=`<span class="section-label">初回ログイン</span><h2>パスワードを変更してください</h2>
+    <p class="lead">管理者が発行した初期パスワードは変更が必要です。英数字・記号を組み合わせて14文字以上にしてください。</p>
+    <form id="staff-password-form" class="card admin-form">
+      <label for="staff-new-pw">新しいパスワード</label><input id="staff-new-pw" type="password" required minlength="14" maxlength="128" autocomplete="new-password">
+      <label for="staff-repeat-pw">新しいパスワード（確認）</label><input id="staff-repeat-pw" type="password" required minlength="14" maxlength="128" autocomplete="new-password">
+      <div id="error" role="alert"></div><button class="pri" type="submit" id="pw-change-submit">変更して利用を開始する</button>
+    </form><button id="initial-sign-out" type="button">ログアウトして戻る</button>`;
+  $('#initial-sign-out').onclick=async()=>{await client.auth.signOut();user=null;staff=null;renderLogin()};
+  $('#staff-password-form').onsubmit=async e=>{
+    e.preventDefault();const p=$('#staff-new-pw').value;
+    if(p!==$('#staff-repeat-pw').value){notify('確認用パスワードと一致しません。');return;}
+    if(p.length<14||p.length>128){notify('パスワードは14〜128文字にしてください。');return;}
+    const b=$('#pw-change-submit');b.disabled=true;b.textContent='更新中…';
+    try{
+      await callStaffAdmin({action:'change_password',new_password:p});
+      await boot();
+    }catch(err){notify('パスワード変更を確認できませんでした。サーバー設定を確認してください。\n'+errorMessage(err));b.disabled=false;b.textContent='変更して利用を開始する'}
+  };
+}
+
+function nextGroupId(){
+  const mx=Math.max(0,...C.qrGroups.map(g=>/^G\d+$/.test(g.id)?Number(g.id.slice(1)):0));
+  return 'G'+String(mx+1).padStart(3,'0');
+}
+function activeResidentOptions(selected=''){
+  return C.residents.filter(x=>x.is_active).map(x=>`<option value="${esc(x.id)}" ${x.id===selected?'selected':''}>${esc(x.id+' / '+x.name+' / '+(x.room||'部屋番号なし'))}</option>`).join('');
+}
+function renderQRAdmin(info=''){
+  if(!staff||staff.role!=='admin'){home();return}
+  stopScan();screen='admin';updateHeader();
+  if(!Q.residentId||!C.residents.some(x=>x.id===Q.residentId&&x.is_active))Q.residentId=C.residents.find(x=>x.is_active)?.id||'';
+  $('#app').innerHTML=`<span class="section-label">管理者専用</span><h2>QR作成・印刷</h2>
+    <p class="lead">登録済み処方から、指定期間に使えるQRを処方・一包化グループごとに1枚ずつ作成・印刷します。Excelへの二重入力は不要です。</p>
+    <div class="safety-panel">本番導入前の検証中です。承認前は架空データのみで確認してください。期間付きQRはサーバー側でも日付と登録期間を照合します。毎回、当日の服薬予定・利用者・時間帯・薬袋の現物を確認してください。古い形式のQRと処方ID手入力では記録できません。処方変更時は旧ラベルを回収してください。</div>
+    ${C.qrReady?'':`<div class="err">03_QR一包化連携.sql が未設定か読み込めません。QR発行機能は停止しています。先にテスト用SupabaseでSQLを設定してください。</div>`}
+    ${info?`<div class="info-panel" role="status">${esc(info)}</div>`:''}
+    <div class="qr-top-actions"><button id="qr-show-print" class="${Q.panel==='print'?'active':''}">QR一覧・印刷</button><button id="qr-show-group" class="${Q.panel==='group'?'active':''}">一包化を登録</button></div>
+    <div id="qr-content"></div>
+    <button id="qr-back-admin">利用者・薬・処方の管理に戻る</button><button id="qr-back-home">服薬確認画面へ戻る</button>`;
+  $('#qr-show-print').onclick=()=>{Q.panel='print';renderQRAdmin()};
+  $('#qr-show-group').onclick=()=>{Q.panel='group';renderQRAdmin()};
+  $('#qr-back-admin').onclick=()=>renderAdmin('prescription');
+  $('#qr-back-home').onclick=home;
+  if(Q.panel==='group')renderGroupCreator();else renderQRFilters();
+}
+function listQrEntries(residentId,slot,date){
+  if(!C.qrReady)return {items:[],warnings:['QR連携SQLが未設定です']};
+  const warnings=[],items=[];
+  for(const g of C.qrGroups.filter(g=>g.residentId===residentId&&g.timeSlot===slot&&g.isActive&&g.startDate<=date&&date<=g.endDate)){
+    if(!safePackage(g,date)){warnings.push(g.id+'：構成処方に不整合があります。印刷できません');continue}
+    items.push({id:g.id,type:'group',group:g,residentId:g.residentId,slot:g.timeSlot,rxs:groupRxs(g)});
+  }
+  for(const rx of C.prescriptions.filter(p=>p.residentId===residentId&&p.timeSlot===slot&&p.isActive&&p.startDate<=date&&date<=p.endDate)){
+    if(isGroupedPrescription(rx.id))continue;
+    if(!repo.getMedicine(rx.medicineId)?.is_active||!repo.getResident(rx.residentId)?.is_active){warnings.push(rx.id+'：登録情報が無効です');continue}
+    items.push({id:rx.id,type:'single',residentId:rx.residentId,slot:rx.timeSlot,rxs:[rx]});
+  }
+  return {items:items.sort((a,b)=>a.id.localeCompare(b.id,'ja')),warnings};
+}
+// 指定期間内の各日について処方・包装の有効性を検査する。
+// 薬がない日を自動補完せず、その日有効な処方だけを発行する。
+// 指定期間内の有効な処方・一包化を重複なく集約する。
+// 同じIDは1つのQRにまとめ、実際に有効な最初と最後の日だけを許可する。
+function listQrPeriod(residentId,slot,start,end){
+  const period=periodDates(start,end);
+  if(period.error)return {items:[],warnings:[],days:[],error:period.error};
+  const found=new Map(),warnings=new Set();
+  for(const date of period.dates){
+    const daily=listQrEntries(residentId,slot,date);
+    for(const entry of daily.items){
+      const key=entry.type+':'+entry.id;
+      const existing=found.get(key);
+      if(existing){existing.validEnd=date;}
+      else found.set(key,{...entry,validStart:date,validEnd:date});
+    }
+    for(const message of daily.warnings)warnings.add(`${date}：${message}`);
+  }
+  const items=[...found.values()].map(entry=>({...entry,
+    qrValue:periodQrValue(entry.id,entry.validStart,entry.validEnd)
+  })).sort((a,b)=>a.id.localeCompare(b.id,'ja'));
+  if(items.length>180)return {items:[],warnings:[...warnings],days:period.dates,error:'QRが180種類を超えます。利用者や時間帯を分けて印刷してください。'};
+  return {items,warnings:[...warnings],days:period.dates,error:''};
+}
+function renderQRFilters(){
+  const target=$('#qr-content');if(!target)return;
+  if(!Q.startDate)Q.startDate=todayJST();
+  if(!Q.endDate)Q.endDate=Q.startDate;
+  const result=listQrPeriod(Q.residentId,Q.slot,Q.startDate,Q.endDate);
+  const groupCount=result.items.filter(x=>x.type==='group').length;
+  const singleCount=result.items.filter(x=>x.type==='single').length;
+  target.innerHTML=`<form class="card admin-form" id="qr-filters"><h3>印刷するQRを選択</h3>
+    <div class="qr-options"><div><label for="qr-res">利用者</label><select id="qr-res" required>${activeResidentOptions(Q.residentId)}</select></div>
+    <div><label for="qr-slot">時間帯</label><select id="qr-slot">${SLOTS.map(t=>`<option ${Q.slot===t?'selected':''}>${t}</option>`).join('')}</select></div>
+    <div class="qr-date-field"><label for="qr-start">QRの使用期間：開始日</label><div class="qr-native-date-wrap"><input id="qr-start" type="date" value="${esc(Q.startDate)}" required></div></div>
+    <div class="qr-date-field"><label for="qr-end">QRの使用期間：終了日</label><div class="qr-native-date-wrap"><input id="qr-end" type="date" value="${esc(Q.endDate)}" required></div></div></div>
+    <div class="qr-period-presets" aria-label="期間のかんたん選択">
+      <button type="button" data-qr-preset="today">今日だけ</button>
+      <button type="button" data-qr-preset="week">今日から7日間</button>
+      <button type="button" data-qr-preset="month">今月</button>
+      <button type="button" data-qr-preset="next">来月</button>
+    </div>
+    <p class="mini">期間内の同じ処方・一包化グループは1枚のQRにまとめます。QRには実際に有効な開始日と終了日を記録し、期間外の読み取りは停止します。薬が変わる場合は新しい処方IDで別のQRを作ります。一包化内の処方は個別QRに出しません。</p>
+    ${result.error?`<div class="err" role="alert">${esc(result.error)}</div>`:`<div id="qr-filter-msg" class="info-panel">対象期間：${result.days.length}日間 ／ QR：${result.items.length}枚（各処方・一包化につき1枚）（個別 ${singleCount}枚・一包化 ${groupCount}枚）</div>`}
+    ${result.warnings.slice(0,10).map(w=>`<p class="err">${esc(w)}</p>`).join('')}
+    ${result.warnings.length>10?`<p class="err">ほか ${result.warnings.length-10}件の不整合があります。</p>`:''}
+    <button class="pri" type="submit" ${!C.qrReady||!!result.error||!result.items.length||!!result.warnings.length?'disabled':''}>指定期間のQR一覧を表示・印刷</button></form>
+    <div class="card"><h3>一包化の登録状況</h3>${C.qrGroups.filter(g=>g.residentId===Q.residentId).map(g=>`
+      <div class="admin-entry ${g.isActive?'':'off'}"><b>${esc(g.id)} / ${esc(g.timeSlot)}</b><div class="admin-sub">${esc(g.startDate)} ～ ${esc(g.endDate)} / ${groupRxs(g).length}種類 / ${g.isActive?'有効':'無効'}</div>
+      <div class="admin-sub">${groupRxs(g).map(rx=>esc(repo.getMedicine(rx?.medicineId)?.name||rx?.id||'不明')).join('・')}</div>
+      <button data-toggle-group="${esc(g.id)}" data-active="${g.isActive?'false':'true'}" class="${g.isActive?'ng':''}">${g.isActive?'一包化を無効化':'再有効化'}</button></div>`).join('')||'<p class="hint">一包化の登録はありません。</p>'}</div>`;
+  $('#qr-res').onchange=e=>{Q.residentId=e.target.value;renderQRFilters()};
+  $('#qr-slot').onchange=e=>{Q.slot=e.target.value;renderQRFilters()};
+  $('#qr-start').onchange=e=>{Q.startDate=e.target.value;renderQRFilters()};
+  $('#qr-end').onchange=e=>{Q.endDate=e.target.value;renderQRFilters()};
+  document.querySelectorAll('[data-qr-preset]').forEach(b=>b.onclick=()=>{
+    const p=b.dataset.qrPreset,t=todayJST();
+    if(p==='today'){Q.startDate=t;Q.endDate=t;}
+    else if(p==='week'){Q.startDate=t;Q.endDate=moveDay(t,6);}
+    else if(p==='month'){[Q.startDate,Q.endDate]=monthBoundary(t);}
+    else if(p==='next'){[Q.startDate,Q.endDate]=monthBoundary(t,1);}
+    renderQRFilters();
+  });
+  $('#qr-filters').onsubmit=e=>{e.preventDefault();Q.residentId=$('#qr-res').value;Q.slot=$('#qr-slot').value;Q.startDate=$('#qr-start').value;Q.endDate=$('#qr-end').value;renderQRPrint()};
+  document.querySelectorAll('[data-toggle-group]').forEach(b=>b.onclick=()=>setGroupActive(b.dataset.toggleGroup,b.dataset.active==='true'));
+}
+async function setGroupActive(id,active){
+  if(adminBusy||!C.qrReady)return;
+  if(!confirm(`一包化 ${id} を${active?'再有効化':'無効化'}しますか？\n過去の記録と構成情報は残ります。`))return;
+  adminBusy=true;
+  try{
+    const {data,error}=await client.rpc('medcheck_qr_group_set_active',{p_group_id:id,p_active:active});
+    if(error)throw error;
+    if(!['reactivated','deactivated','unchanged'].includes(data?.result))throw Error('状態の保存を確認できませんでした');
+    await loadMaster();renderQRAdmin(id+'の状態を更新しました');
+  }catch(e){notify('状態変更を確認できません。最新の一覧を再確認してください。\n'+errorMessage(e))}
+  finally{adminBusy=false}
+}
+function eligibleForGroup(){
+  return C.prescriptions.filter(rx=>rx.isActive&&rx.residentId===Q.groupResident&&rx.timeSlot===Q.groupSlot&&
+    !!rx.endDate&&!C.qrGroupItems.some(x=>x.prescriptionId===rx.id)&&!!repo.getMedicine(rx.medicineId)?.is_active);
+}
+function renderGroupCreator(){
+  const target=$('#qr-content');if(!target)return;
+  if(!Q.groupResident||!C.residents.some(r=>r.id===Q.groupResident&&r.is_active))Q.groupResident=C.residents.find(r=>r.is_active)?.id||'';
+  const rxs=eligibleForGroup();
+  const periods=[...new Set(rxs.map(x=>x.startDate+'|'+x.endDate))].sort();
+  if(!periods.includes(Q.groupPeriod))Q.groupPeriod=periods[0]||'';
+  const candidates=rxs.filter(rx=>rx.startDate+'|'+rx.endDate===Q.groupPeriod);
+  target.innerHTML=`<form class="card admin-form" id="qr-group-create"><h3>一包化QRを登録する</h3>
+    <p class="hint">先に「処方」に各薬剤（P番号）を登録し、同じ利用者・時間帯・開始日・終了日の薬を2種類以上選んでまとめます。</p>
+    <label for="group-id">一包化ID（袋のQRになる番号）</label><input id="group-id" required pattern="G[0-9]{3,8}" maxlength="9" value="${esc(nextGroupId())}">
+    <label for="group-res">利用者</label><select id="group-res" required>${activeResidentOptions(Q.groupResident)}</select>
+    <label for="group-slot">時間帯</label><select id="group-slot">${SLOTS.map(t=>`<option ${Q.groupSlot===t?'selected':''}>${t}</option>`).join('')}</select>
+    <label for="group-period">服薬期間</label><select id="group-period" ${periods.length?'':'disabled'}>${periods.map(t=>`<option value="${esc(t)}" ${Q.groupPeriod===t?'selected':''}>${esc(t.replace('|',' ～ '))}</option>`).join('')}</select>
+    <label>一包化に入れる薬（2種類以上）</label>
+    ${candidates.map(rx=>`<label class="qr-check"><input type="checkbox" value="${esc(rx.id)}" name="group-prescription">
+      <span><b>${esc(repo.getMedicine(rx.medicineId)?.name||rx.medicineId)}</b><small>${esc(rx.id)} ／ ${esc(rx.dose)} ／ ${esc(rx.timeSlot)}</small></span></label>`).join('')||'<div class="info-panel">条件に合う未登録の処方がありません。先に処方を追加してください。</div>'}
+    <div class="safety-panel">一包化に登録した薬は、個別P番号QRでの記録を停止します。包装や処方内容を変更するときは古いGとPを無効化し、新しい処方IDで登録してください。</div>
+    <div id="error"></div><button class="pri" type="submit" ${!C.qrReady||candidates.length<2?'disabled':''}>内容を確認して一包化QRを登録</button></form>`;
+  $('#group-res').onchange=e=>{Q.groupResident=e.target.value;Q.groupPeriod='';renderGroupCreator()};
+  $('#group-slot').onchange=e=>{Q.groupSlot=e.target.value;Q.groupPeriod='';renderGroupCreator()};
+  if($('#group-period'))$('#group-period').onchange=e=>{Q.groupPeriod=e.target.value;renderGroupCreator()};
+  $('#qr-group-create').onsubmit=createGroup;
+}
+async function createGroup(e){
+  e.preventDefault();if(!C.qrReady||adminBusy||staff?.role!=='admin')return;
+  const id=$('#group-id').value.trim().toUpperCase();
+  const ids=[...document.querySelectorAll('input[name="group-prescription"]:checked')].map(x=>x.value);
+  if(ids.length<2||ids.length>20){notify('一包化には2～20種類の薬を選んでください');return}
+  const summary=ids.map(x=>{const rx=repo.getPrescription(x);return x+' / '+(repo.getMedicine(rx?.medicineId)?.name||'不明')+' / '+(rx?.dose||'')}).join('\n');
+  if(!confirm(`一包化 ${id} を登録します。\n利用者：${repo.getResident(Q.groupResident)?.name||Q.groupResident}\n時間帯：${Q.groupSlot}\n\n${summary}\n\n実物の包装予定・処方内容と一致していますか？`))return;
+  adminBusy=true;const b=$('#qr-group-create button[type="submit"]');b.disabled=true;b.textContent='登録中…';
+  try{
+    const {data,error}=await client.rpc('medcheck_qr_group_create',{p_group_id:id,p_prescription_ids:ids});
+    if(error)throw error;
+    if(data?.result!=='created')throw Error('登録完了を確認できませんでした');
+    await loadMaster();Q.residentId=Q.groupResident;Q.slot=Q.groupSlot;Q.startDate=todayJST();Q.endDate=todayJST();Q.panel='print';
+    renderQRAdmin(id+' を登録しました。指定期間で使えるQRを一覧表示できます。');
+  }catch(err){notify('登録を確認できません。再登録前にサーバーの一覧を更新してください。\n'+errorMessage(err));b.disabled=false;b.textContent='内容を確認して一包化QRを登録'}
+  finally{adminBusy=false}
+}
+function printLabel(entry){
+  const resident=repo.getResident(entry.residentId),drugNames=entry.rxs.map(rx=>`${esc(repo.getMedicine(rx.medicineId)?.name||'不明')}：${esc(rx.dose)}`);
+  return `<article class="qr-label"><div class="qr-label-kind">${entry.type==='group'?'一包化':'個別包装'} ／ ${esc(entry.slot)}</div>
+    <div class="qr-label-date"><span class="qr-label-date-caption">QR使用期間</span><span class="qr-label-date-range"><span>開始 ${esc(entry.validStart)}</span><span>終了 ${esc(entry.validEnd)}</span></span></div>
+    <div class="qr-label-id">${esc(entry.id)}</div>${qrSvg(entry.qrValue)}
+    <div class="qr-label-name">${esc(resident?.name||entry.residentId)}</div>
+    <div class="qr-label-meta">${esc(resident?.room||'—')}号室 ／ ${esc(entry.slot)} ／ 処方期間：${esc(entry.rxs[0]?.startDate||'')} ～ ${esc(entry.rxs[0]?.endDate||'')}</div>
+    <div class="qr-label-drugs">${drugNames.map(x=>`<div>${x}</div>`).join('')}</div>
+    <div class="qr-label-note">毎回、当日の服薬予定・利用者・時間帯・実物の薬を確認。処方変更後の古いQRは使用しないでください。</div>
+    <button class="noprint" type="button" data-qrdl="${esc(entry.qrValue)}">このQRをPNG保存</button></article>`;
+}
+function renderQRPrint(){
+  if(!staff||staff.role!=='admin'){home();return}
+  if(!C.qrReady){renderQRAdmin('QR設定が未完了です');return}
+  const data=listQrPeriod(Q.residentId,Q.slot,Q.startDate,Q.endDate);
+  if(data.error){renderQRAdmin(data.error);return}
+  if(!data.items.length){renderQRAdmin('指定期間に発行できるQRがありません');return}
+  if(data.warnings.length){renderQRAdmin('処方に不整合があります。印刷を停止しました。'+data.warnings.slice(0,3).join(' / '));return}
+  stopScan();screen='qrprint';updateHeader();
+  const r=repo.getResident(Q.residentId);
+  $('#app').innerHTML=`<div id="qr-page"><div id="print-toolbar"><h2>QR印刷プレビュー（期間内1枚）</h2>
+    <p class="lead">${esc(r?.name||Q.residentId)} ／ ${esc(Q.slot)} ／ ${esc(Q.startDate)} ～ ${esc(Q.endDate)} ｜ ${data.items.length}枚</p>
+    <div class="safety-panel">1枚のQRを複数日に使用できます。QRは服薬済みの証明や薬の実物確認の代わりにはなりません。毎回、当日の服薬予定と現物を確認してください。処方変更後の古いラベルは回収してください。導入承認前は架空データのみで確認してください。</div>
+    <button class="pri" id="qr-print-button">QRラベルを印刷する</button><button id="qr-print-back">条件を変更する</button></div>
+    <div class="qr-print-heading">${esc(r?.name||Q.residentId)} ／ ${esc(Q.slot)} ／ ${esc(Q.startDate)} ～ ${esc(Q.endDate)} （${data.items.length}枚）</div>
+    <div class="qr-label-grid">${data.items.map(printLabel).join('')}</div></div>`;
+  $('#qr-print-button').onclick=()=>window.print();
+  $('#qr-print-back').onclick=()=>renderQRAdmin();
+  document.querySelectorAll('[data-qrdl]').forEach(b=>b.onclick=()=>downloadQrPNG(b.dataset.qrdl));
+}
+function renderResidents(){screen='flow';A.step=2;updateHeader();A.resident=null;A.rx=null;
+  const residents=C.residents.filter(x=>x.is_active);
+  $('#app').innerHTML=`<span class="section-label">STEP 02 / 利用者</span><h2>服薬する方を選択</h2>
+  <p class="lead">利用者の氏名・部屋番号を確認してください。</p>
+  ${residents.map(r=>`<button class="rc" data-res="${esc(r.id)}"><span><span class="resident-name">${esc(r.name)}</span><span class="resident-info">${esc(r.kana||'')} ／ ${esc(r.room||'—')}号室</span></span></button>`).join('')||'<div class="info-panel">利用者が登録されていません。</div>'}
+  <button id="back">職員確認に戻る</button>`;
+  document.querySelectorAll('[data-res]').forEach(b=>b.onclick=()=>{A.resident=repo.getResident(b.dataset.res);renderConfirmResident()});$('#back').onclick=home;
+}
+function renderConfirmResident(){A.step=2;updateHeader();const r=A.resident;
+  $('#app').innerHTML=`<span class="section-label">STEP 02 / 本人確認</span><h2>ご本人の確認</h2>
+  <div class="card person-card"><div class="big">${esc(r.name)}</div><p class="muted">${esc(r.kana||'')}</p><div class="person-room">${esc(r.room||'—')}号室</div></div>
+  <div class="safety-panel">顔写真は使用しません。氏名・部屋番号だけで本人確認を完了させず、施設の正式な手順で確認してください。</div>
+  <button id="yes" class="pri">別の手順で本人を確認した</button><button id="no">選び直す</button>`;
+  $('#yes').onclick=renderScan;$('#no').onclick=renderResidents;
+}
+// QR読み取り部品は複数の配信元から取得する。接続できない場合は理由を表示する。
+let qrDecoderLoading=null, detector=null;
+let cameraStarting=false, lastQrFrame=0;
+function getBarcodeDetector(){
+  if(detector)return detector;
+  if(!('BarcodeDetector' in window))return null;
+  try{detector=new BarcodeDetector({formats:['qr_code']});return detector}catch(e){return null}
+}
+function qrAvailable(){return typeof window.jsQR==='function'||!!getBarcodeDetector()}
+function loadQrScript(url){
+  return new Promise((resolve)=>{
+    const script=document.createElement('script');let finished=false;
+    const complete=(ok)=>{if(finished)return;finished=true;clearTimeout(timer);if(!ok)script.remove();resolve(ok)};
+    const timer=setTimeout(()=>complete(false),6500);
+    script.src=url;script.async=true;script.onload=()=>complete(typeof window.jsQR==='function');script.onerror=()=>complete(false);
+    document.head.appendChild(script);
+  });
+}
+async function ensureQRDecoder(){
+  if(typeof window.jsQR==='function')return true;
+  if(!qrDecoderLoading){
+    qrDecoderLoading=(async()=>{
+      const sources=[
+        'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js',
+        'https://unpkg.com/jsqr@1.4.0/dist/jsQR.js'
+      ];
+      for(const url of sources){
+        if(await loadQrScript(url)&&qrAvailable())return true;
+      }
+      return qrAvailable();
+    })().finally(()=>{qrDecoderLoading=null});
+  }
+  // 標準のBarcodeDetectorがある場合は、追加ライブラリの取得を待たずに利用できる。
+  // ただし追加ライブラリの読み込みも進め、標準解析失敗時に切り替え可能にする。
+  if(getBarcodeDetector())return true;
+  return qrDecoderLoading;
+}
+function setQRStatus(t){const el=$('#qr-status');if(el)el.textContent=t}
+function renderScan(){screen='flow';A.step=3;A.status=null;A.rsel='';A.rfree='';A.group=null;A.groupCheck=null;A.qrText=null;updateHeader();stopScan();
+  $('#app').innerHTML=`<span class="section-label">STEP 03 / 薬袋QR</span><h2>薬袋のQRを読み取る</h2>
+  <div class="card"><b>${esc(A.resident.name)}</b> ／ ${esc(A.slot)}</div>
+  <div class="qrguide">個別包装は処方ID（例：P001）、一包化は袋ID（例：G001）を含む**期間付きQR**を読み取ります。<br>Excelファイルではなく、QRが写った画像（PNG・JPEG等）を選んでください。</div>
+  <div id="qr-status" class="hint" role="status" aria-live="polite">QR読み取り機能を確認しています…</div>
+  <div id="cam" style="display:none"><video id="video" autoplay playsinline muted></video><button id="stop">カメラを停止</button></div>
+  <div id="error" role="alert"></div>
+  <button class="pri" id="start">カメラを起動する</button>
+  <button type="button" id="alternate-camera">別のカメラ設定で試す</button>
+  <div class="card"><h3>写真からQRを読み取る</h3><p class="hint">QRコードが鮮明に写ったPNG・JPEG画像を選択してください。</p><input type="file" id="qrphoto" accept="image/*" aria-label="QR画像を選択"></div>
+  <div class="safety-panel">本番導入準備版では処方IDの手入力を停止しています。必ず期間付きQR（MC2形式）を読み取ってください。処方変更後の旧QRは使わないでください。</div>
+  <button id="back">利用者選択へ戻る</button><canvas id="cv" hidden></canvas>`;
+  $('#start').onclick=()=>startScan(false);
+  $('#alternate-camera').onclick=()=>startScan(true);
+  $('#stop').onclick=()=>{stopScan();$('#cam').style.display='none';$('#start').style.display=''};
+  $('#qrphoto').onchange=photoScan;$('#back').onclick=renderResidents;
+  (async()=>{
+    const ok=await ensureQRDecoder();
+    if(!$('#qr-status'))return;
+    setQRStatus(ok?'QR解析部品：利用可能':'QR解析部品：読み込めませんでした。通信を確認してください。');
+  })();
+}
+async function decodeQR(source,canvas,isStill=false){
+  const native=getBarcodeDetector();
+  if(native){
+    try{const result=await native.detect(source);if(result.length&&result[0].rawValue)return result[0].rawValue}
+    catch(e){console.warn('標準QR解析から画像解析へ切り替えます',e?.name||e)}
+  }
+  if(typeof window.jsQR!=='function')return null;
+  const w=source.videoWidth||source.naturalWidth||source.width;
+  const h=source.videoHeight||source.naturalHeight||source.height;
+  if(!w||!h)throw new Error('画像のサイズを読み取れませんでした');
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  if(!ctx)throw new Error('画像解析に使用する描画機能が利用できません');
+  const max=Math.max(w,h);
+  // 静止画は複数の解像度・中央領域で試し、小さなQRにも対応する。
+  const cases=isStill?[
+    [0,0,w,h,Math.min(max,1600)],
+    [0,0,w,h,Math.min(max,2300)],
+    [w*.15,h*.15,w*.70,h*.70,Math.min(max,2000)]
+  ]:[[0,0,w,h,Math.min(max,1100)]];
+  for(const [x,y,cw,ch,limit] of cases){
+    const ratio=Math.min(1,limit/Math.max(cw,ch));
+    const dw=Math.max(1,Math.round(cw*ratio)),dh=Math.max(1,Math.round(ch*ratio));
+    canvas.width=dw;canvas.height=dh;
+    ctx.drawImage(source,x,y,cw,ch,0,0,dw,dh);
+    const pixels=ctx.getImageData(0,0,dw,dh);
+    const q=window.jsQR(pixels.data,dw,dh,{inversionAttempts:'attemptBoth'});
+    if(q?.data)return q.data;
+  }
+  return null;
+}
+function cameraErrorText(e){
+  const n=e?.name||'UnknownError';
+  if(n==='NotAllowedError'||n==='PermissionDeniedError'||n==='SecurityError')
+    return 'カメラの使用が拒否されています。ブラウザのアドレスバー付近のサイト設定でカメラを許可し、もう一度お試しください。（'+n+'）';
+  if(n==='NotFoundError'||n==='DevicesNotFoundError')
+    return '使用できるカメラが見つかりません。PCにカメラが接続されているか確認してください。（'+n+'）';
+  if(n==='NotReadableError'||n==='TrackStartError')
+    return 'カメラを起動できません。別のアプリ・会議ソフトがカメラを使用していないか確認してください。（'+n+'）';
+  if(n==='OverconstrainedError')
+    return 'この端末では要求したカメラ設定を使えません。「別のカメラ設定で試す」を押してください。（'+n+'）';
+  if(n==='AbortError')return 'カメラが途中で停止しました。別のカメラ設定で再試行してください。（AbortError）';
+  return 'カメラの起動に失敗しました。（'+n+'） '+String(e?.message||'').slice(0,130);
+}
+async function startScan(useAny=false){
+  if(cameraStarting||scanStream)return;
+  if(!navigator.mediaDevices?.getUserMedia){
+    notify('カメラAPIを利用できません。GitHub Pagesの https:// で始まる公開URLをSafari・Chromeで開いてください。ブラウザ内プレビューではカメラが使えない場合があります。');return;
+  }
+  cameraStarting=true;const token=++scanToken;let videoStream=null;
+  const start=$('#start');if(start){start.disabled=true;start.textContent='カメラの起動を確認中…'}
+  try{
+    if(!await ensureQRDecoder()){
+      notify('QR解析部品を読み込めません。通信環境を確認してください。');return;
+    }
+    setQRStatus('QR解析部品：利用可能');
+    const constraints=useAny?{video:true,audio:false}:{video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false};
+    try{videoStream=await navigator.mediaDevices.getUserMedia(constraints)}
+    catch(e){
+      if(!useAny&&(e.name==='OverconstrainedError'||e.name==='NotFoundError'))
+        videoStream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+      else throw e;
+    }
+    if(token!==scanToken){videoStream.getTracks().forEach(t=>t.stop());return}
+    scanStream=videoStream;const v=$('#video');if(!v){stopScan();return}
+    v.srcObject=scanStream;$('#cam').style.display='block';$('#start').style.display='none';
+    await v.play();if(token!==scanToken)return;
+    lastQrFrame=0;
+    const loop=async()=>{
+      if(token!==scanToken||!scanStream)return;
+      const now=performance.now();
+      if(!scanBusy&&now-lastQrFrame>=140&&v.readyState>=2&&v.videoWidth){
+        lastQrFrame=now;
+        scanBusy=true;
+        try{
+          const raw=await decodeQR(v,$('#cv'));
+          if(raw&&scanStream&&token===scanToken){stopScan();await onCode(raw);return}
+        }catch(e){console.warn('カメラのQR解析に失敗',e)}finally{scanBusy=false}
+      }
+      if(token===scanToken)scanRaf=requestAnimationFrame(loop);
+    };scanRaf=requestAnimationFrame(loop);
+  }catch(e){
+    if(videoStream)videoStream.getTracks().forEach(t=>t.stop());
+    if(scanStream===videoStream)scanStream=null;
+    notify(cameraErrorText(e));
+  }finally{
+    cameraStarting=false;
+    if($('#start')){$('#start').disabled=false;$('#start').textContent='カメラを起動する'}
+  }
+}
+function loadQrImage(file){
+  return new Promise((resolve,reject)=>{
+    const url=URL.createObjectURL(file),im=new Image();
+    im.onload=()=>{URL.revokeObjectURL(url);resolve(im)};
+    im.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('この画像形式はブラウザで読み込めません。PNGまたはJPEGに変換してください。'))};
+    im.src=url;
+  });
+}
+async function photoScan(e){
+  const file=e.target.files?.[0];if(!file)return;
+  stopScan();
+  const chooser=e.target;chooser.disabled=true;
+  try{
+    if(!file.type.startsWith('image/')&&!/\.(png|jpe?g|webp|gif|bmp|heic|heif)$/i.test(file.name)){
+      notify('ExcelファイルはQR画像として読み取れません。QR部分を画像（PNG・JPEG等）として保存してください。');return;
+    }
+    if(file.size>25*1024*1024){notify('画像が大きすぎます。25MB以下のPNG・JPEG画像を選択してください。');return}
+    if(!await ensureQRDecoder()){
+      setQRStatus('QR解析部品：利用できません');
+      notify('QR解析部品を読み込めませんでした。ネットワーク接続を確認してください。');return;
+    }
+    setQRStatus('QR画像を解析しています…');
+    const im=await loadQrImage(file);
+    if(!$('#cv'))return;
+    const data=await decodeQR(im,$('#cv'),true);
+    if(!data){
+      setQRStatus('QR解析部品：利用可能／画像内のQRは検出できませんでした');
+      notify('画像は開けましたが、QRコードを検出できませんでした。QR部分を大きく切り出したPNG・JPEG画像で試してください。');return;
+    }
+    setQRStatus('QRを検出しました。処方IDを照合しています…');
+    await onCode(data);
+  }catch(e){notify('画像の処理に失敗しました。'+String(e?.message||e).slice(0,150))}
+  finally{if(chooser.isConnected){chooser.disabled=false;chooser.value=''}}
+}
+async function onCode(raw){
+  stopScan();
+  const qrText=String(raw||'').trim();
+  // 古い日付なしQR・MC1・手入力IDを受け付けない。保存時はサーバーでも再検証。
+  const p=/^MC2\|(\d{4}-\d{2}-\d{2})\|(\d{4}-\d{2}-\d{2})\|([PG][0-9]{3,8})$/.exec(qrText);
+  const range=p&&periodDates(p[1],p[2]);
+  if(!p||!range||range.error){renderScan();notify('このQRは本番導入準備版で使用できません。期間付きQRを管理者画面から発行してください。');return;}
+  const today=todayJST();
+  if(today<p[1]||today>p[2]){renderScan();notify('QRの使用期間外です。新しいQRを発行してください。');return;}
+  const code=p[3];
+  A.qrText=qrText;
+  setLoading('最新の処方と記録を確認しています');
+  try{await loadMaster();await loadLogs(todayJST());
+    if(/^G[0-9]{3,8}$/.test(code)){
+      if(!C.qrReady){renderScan();notify('一包化QR機能のSQLが未設定です。03_QR一包化連携.sqlを確認してください。');return}
+      const group=C.qrGroups.find(g=>g.id===code);
+      if(!group){renderScan();notify('一包化ID '+code+' は登録されていません。');return}
+      A.group=group;A.rx=null;A.groupCheck=verifyGroup(group);renderGroupVerify();return;
+    }
+    const rx=repo.getPrescription(code);
+    if(!rx){renderScan();notify('この処方IDは登録されていません。読み取った内容：'+code.slice(0,60));return}
+    if(C.qrReady&&isGroupedPrescription(code)){renderScan();notify('この処方は一包化に含まれています。薬袋のG番号QRでまとめて照合してください。');return}
+    A.group=null;
+    A.rx=rx;A.check=verify(rx);renderVerify();
+  }catch(e){renderScan();notify('サーバーに接続できないため照合を中止しました。'+errorMessage(e))}
+}
+function verify(rx){
+  const now=todayJST(),owner=repo.getResident(rx.residentId),med=repo.getMedicine(rx.medicineId);
+  let duplicate=repo.findLog(rx.id,now,rx.timeSlot);
+  const checks=[
+    [!!owner&&owner.id===A.resident.id,'本人の薬です','登録された利用者と一致しません'],
+    [rx.timeSlot===A.slot,'時間帯が一致しました','処方の時間帯は '+rx.timeSlot+' です'],
+    [!!owner?.is_active&&!!med?.is_active&&rx.isActive===true,'処方・利用者・薬剤は有効です','無効化された処方・利用者・薬剤です'],
+    [!!rx.endDate&&rx.startDate<=now&&now<=rx.endDate,'処方期間内です','処方の開始日・終了日を確認してください（終了日未設定も停止）'],
+    [!duplicate,'同じ処方の記録はありません','すでに本日の記録があります']
+  ];
+  return {ok:checks.every(x=>x[0]),checks,med,duplicate};
+}
+function verifyGroup(group){
+  const date=todayJST(),owner=repo.getResident(group.residentId),rxs=groupRxs(group);
+  const missing=rxs.some(rx=>!rx),goodRx=rxs.length>=2&&rxs.every(rx=>rx&&rx.isActive&&
+    rx.residentId===group.residentId&&rx.timeSlot===group.timeSlot&&
+    rx.startDate===group.startDate&&rx.endDate===group.endDate&&
+    rx.startDate<=date&&date<=rx.endDate&&!!repo.getMedicine(rx.medicineId)?.is_active);
+  const duplicates=rxs.filter(rx=>rx&&!!repo.findLog(rx.id,date,rx.timeSlot));
+  const checks=[
+    [!!owner&&owner.id===A.resident?.id,'利用者が一致しました','利用者が一致しません'],
+    [group.timeSlot===A.slot,'時間帯が一致しました','時間帯が異なります'],
+    [group.isActive===true&&!!owner?.is_active,'一包化登録は有効です','無効化された一包化・利用者です'],
+    [group.startDate<=date&&date<=group.endDate,'有効な服薬期間です','一包化の服薬期間外です'],
+    [!missing&&goodRx,'すべての薬剤・処方は有効です','処方や薬剤に無効または不整合があります'],
+    [!duplicates.length,'記録の重複はありません','一包化内に記録済みの薬があります']
+  ];
+  return {ok:checks.every(x=>x[0]),checks,rxs,duplicates};
+}
+function renderGroupVerify(){
+  screen='flow';A.step=4;updateHeader();const g=A.group,c=A.groupCheck;
+  $('#app').innerHTML=`<span class="section-label">STEP 04 / 一包化QR照合</span>
+    <div class="res ${c.ok?'ok':'ng'}"><div class="result-label">${c.ok?'一包化を照合しました':'照合エラー'}</div>
+    <div class="big">${c.ok?'登録条件が一致しました':'薬を渡さないでください'}</div></div>
+    <div class="card"><h3>袋ID：${esc(g.id)} ／ ${esc(g.timeSlot)}</h3>
+      <p class="hint">袋に入る予定の薬 ${c.rxs.length}種類。実物の薬袋・処方内容と照合してください。</p>
+      ${c.rxs.map(rx=>`<div class="admin-entry"><b>${esc(rx?.id||'未登録')}：${esc(repo.getMedicine(rx?.medicineId)?.name||'薬剤不明')}</b>
+        <div class="admin-sub">${esc(rx?.dose||'1回量不明')}</div></div>`).join('')}
+    </div><div class="card"><h3>照合項目</h3><ul class="chk">${c.checks.map(x=>`<li class="${x[0]?'p':'f'}">${esc(x[x[0]?1:2])}</li>`).join('')}</ul></div>
+    ${c.ok?'<button class="pri" id="next">この一包化の服薬結果を記録する</button>':'<div class="err">相違や記録済みの薬があります。施設の確認手順に従ってください。</div>'}
+    <button id="back">QRを読み直す</button>`;
+  if(c.ok)$('#next').onclick=renderGroupRecord;
+  $('#back').onclick=renderScan;
+}
+function renderGroupRecord(){
+  screen='flow';A.step=5;updateHeader();const g=A.group,c=A.groupCheck;
+  $('#app').innerHTML=`<span class="section-label">STEP 05 / 一包化記録</span><h2>一包化の服薬結果を記録</h2>
+    <div class="card"><b>${esc(A.resident.name)}</b> ／ ${esc(g.timeSlot)} ／ ${esc(g.id)}<p class="hint">${c.rxs.map(rx=>esc(repo.getMedicine(rx.medicineId)?.name||'不明')+'（'+esc(rx.dose)+'）').join('、')}</p></div>
+    <div class="safety-panel">袋内の薬を確認し、実際の服薬結果を確認してから選択してください。記録は構成する全処方に同じ結果を一括保存します。薬ごとに結果が異なる場合は、この一括記録を使用せず施設の手順に従ってください。</div>
+    ${STATUSES.map(s=>`<button class="status-choice ${A.status===s?'sel':''}" data-status="${s}">${s}</button>`).join('')}
+    ${A.status&&A.status!=='服薬済み'?`<div class="card"><label for="reason">理由（必須）</label><select id="reason"><option value="">選択してください</option>${REASONS.map(t=>`<option ${A.rsel===t?'selected':''}>${t}</option>`).join('')}</select><textarea id="details" maxlength="1000" placeholder="補足（任意）">${esc(A.rfree)}</textarea></div>`:''}
+    <div id="error"></div><button id="save" class="pri" ${A.status?'':'disabled'}>全${c.rxs.length}種類を一括記録する</button>
+    <button id="back">一包化照合に戻る</button>`;
+  document.querySelectorAll('[data-status]').forEach(b=>b.onclick=()=>{A.status=b.dataset.status;renderGroupRecord()});
+  if($('#reason'))$('#reason').onchange=e=>A.rsel=e.target.value;
+  if($('#details'))$('#details').oninput=e=>A.rfree=e.target.value;
+  $('#back').onclick=renderGroupVerify;$('#save').onclick=saveGroupRecord;
+}
+async function saveGroupRecord(){
+  const g=A.group,c=A.groupCheck,reason=A.status==='服薬済み'?null:[A.rsel,A.rfree.trim()].filter(Boolean).join('：');
+  if(A.status!=='服薬済み'&&(!reason||reason.length<2)){notify('未服薬・拒否は理由が必要です。');return}
+  if(!confirm(`${A.resident.name} ／ ${g.id} ／ ${c.rxs.length}種類 ／ ${A.status}\n\n全処方に同じ結果を一括記録しますか？`))return;
+  const b=$('#save');b.disabled=true;b.textContent='一括保存中…';
+  try{
+    const {data,error}=await client.rpc('medcheck_record_group_qr',{
+      p_qr_value:A.qrText,p_group_id:g.id,p_resident_id:A.resident.id,p_selected_slot:A.slot,p_status:A.status,p_reason:reason
+    });if(error)throw error;
+    if(data?.result==='duplicate'){
+      await loadLogs(todayJST());A.groupCheck=verifyGroup(g);renderGroupVerify();notify('重複記録を防止しました。すでに一包化内に記録済みの薬があります。');return;
+    }
+    if(data?.result!=='saved'||data.count!==c.rxs.length)throw Error('一括保存の完了を確認できません。履歴で確認してください。');
+    A.lastSaved={status:A.status,groupId:g.id,count:data.count};
+    try{await loadLogs(todayJST())}catch(e){}
+    renderGroupDone();
+  }catch(e){notify('一括保存の完了を確認できません。再試行前に必ず履歴を確認してください。\n'+errorMessage(e));b.disabled=false;b.textContent='全処方を一括記録する'}
+}
+function renderGroupDone(){
+  screen='done';updateHeader();const g=A.group;
+  $('#app').innerHTML=`<div class="res ok"><div class="result-label">保存完了</div><div class="big">一包化の記録を保存しました</div><div class="result-note">${esc(g.id)} ／ ${A.lastSaved.count}種類を一括記録しました。</div></div>
+  <div class="card">${esc(A.resident.name)} ／ ${esc(g.timeSlot)}<p>結果：<b>${esc(A.lastSaved.status)}</b></p>担当：${esc(staff.name)}</div>
+  <button class="pri" id="same">同じ利用者の別の薬を確認</button><button id="different">別の利用者を確認</button><button id="status">服薬状況を見る</button>`;
+  $('#same').onclick=renderScan;$('#different').onclick=renderResidents;$('#status').onclick=()=>showStatus();
+}
+function renderVerify(){screen='flow';A.step=4;updateHeader();const c=A.check,rx=A.rx;
+  $('#app').innerHTML=`<span class="section-label">STEP 04 / 照合</span>
+  <div class="res ${c.ok?'ok':'ng'}"><div class="result-label">${c.ok?'照合結果':'照合エラー'}</div>
+  <div class="big">${c.ok?'内容が一致しました':'薬を渡さないでください'}</div>
+  <div class="result-note">${c.ok?'サーバーへ保存する際も再検証します。':'相違または重複を確認してください。'}</div></div>
+  <div class="card"><h3>処方情報</h3><div class="big" style="font-size:20px">${esc(c.med?.name||'登録なし')}</div>
+  <div>用量：${esc(rx.dose)} ／ 時間帯：${esc(rx.timeSlot)}</div><p class="hint">${esc(c.med?.shape||'')}　${esc(c.med?.note||'')}</p></div>
+  <div class="card"><h3>照合項目</h3><ul class="chk">${c.checks.map(x=>`<li class="${x[0]?'p':'f'}">${esc(x[x[0]?1:2])}</li>`).join('')}</ul></div>
+  ${c.ok?'<button class="pri" id="next">服薬結果の記録に進む</button>':'<div class="err">このQRの薬を渡さず、施設の確認手順に従ってください。</div>'}
+  <button id="back">QRを読み直す</button>`;
+  if(c.ok)$('#next').onclick=renderRecord;$('#back').onclick=renderScan;
+}
+function renderRecord(){screen='flow';A.step=5;updateHeader();
+  $('#app').innerHTML=`<span class="section-label">STEP 05 / 記録</span><h2>服薬結果を記録</h2>
+  <div class="card"><b>${esc(A.resident.name)}</b> ／ ${esc(A.check.med.name)} ／ ${esc(A.rx.dose)} ／ ${esc(A.slot)}</div>
+  <p class="lead">実際の服薬を確認してから結果を選んでください。</p>
+  ${STATUSES.map(s=>`<button class="status-choice ${A.status===s?'sel':''}" data-status="${s}">${s}</button>`).join('')}
+  ${A.status&&A.status!=='服薬済み'?`<div class="card"><label for="reason">理由（必須）</label>
+  <select id="reason"><option value="">選択してください</option>${REASONS.map(t=>`<option ${A.rsel===t?'selected':''}>${t}</option>`).join('')}</select>
+  <textarea id="details" maxlength="1000" placeholder="補足（任意）">${esc(A.rfree)}</textarea></div>`:''}
+  <div id="error"></div><button class="pri" id="save" ${A.status?'':'disabled'}>サーバーに記録する</button>
+  <button id="back">QR照合に戻る</button>`;
+  document.querySelectorAll('[data-status]').forEach(b=>b.onclick=()=>{A.status=b.dataset.status;renderRecord()});
+  if($('#reason'))$('#reason').onchange=e=>A.rsel=e.target.value;
+  if($('#details'))$('#details').oninput=e=>A.rfree=e.target.value;
+  $('#back').onclick=renderVerify;$('#save').onclick=saveRecord;
+}
+async function saveRecord(){
+  let reason=A.status==='服薬済み'?null:[A.rsel,A.rfree.trim()].filter(Boolean).join('：');
+  if(A.status!=='服薬済み'&&!reason){notify('未服薬・拒否は理由が必要です。');return}
+  if(!confirm(`${A.resident.name} ／ ${A.check.med.name} ／ ${A.status}\nこの結果をサーバーに記録しますか？`))return;
+  const b=$('#save');b.disabled=true;b.textContent='保存中…';
+  try{
+    const {data,error}=await client.rpc('medcheck_record_medication_qr',{
+      p_qr_value:A.qrText,p_prescription_id:A.rx.id,p_resident_id:A.resident.id,p_selected_slot:A.slot,p_status:A.status,p_reason:reason
+    });if(error)throw error;
+    if(data?.result==='duplicate'){
+      await loadLogs(todayJST());A.check=verify(A.rx);renderVerify();notify('二重登録を防止しました。すでに記録済みです。服薬履歴を確認してください。');return;
+    }
+    if(data?.result!=='saved')throw new Error('保存結果を確認できませんでした。履歴で確認してください。');
+    A.lastSaved={status:A.status,reason,id:data.log_id};
+    try{await loadLogs(todayJST())}catch(e){}
+    renderDone();
+  }catch(e){notify('保存が確認できませんでした。再度保存する前に必ず履歴を確認してください。\n'+errorMessage(e));b.disabled=false;b.textContent='サーバーに記録する'}
+}
+function renderDone(){screen='done';updateHeader();$('#app').innerHTML=`<div class="res ok"><div class="result-label">保存完了</div><div class="big">服薬記録を保存しました</div><div class="result-note">サーバーから保存確認を受け取りました。</div></div>
+  <div class="card"><b>${esc(A.resident.name)}</b><p>${esc(A.check.med.name)} ／ ${esc(A.rx.dose)} ／ ${esc(A.slot)}</p>
+  結果：<b>${esc(A.lastSaved.status)}</b><br>担当：${esc(staff.name)}</div>
+  <button class="pri" id="same">同じ利用者の別の薬を確認する</button>
+  <button id="different">別の利用者を確認する</button><button id="status">服薬状況一覧を見る</button><button id="history">履歴を見る</button>`;
+  $('#same').onclick=()=>{A.status=null;A.rsel='';A.rfree='';renderScan()};
+  $('#different').onclick=()=>{A.status=null;A.rsel='';A.rfree='';renderResidents()};
+  $('#status').onclick=()=>showStatus();$('#history').onclick=()=>showHistory();
+}
+async function showStatus(date=A.date,filter=A.filter){stopScan();screen='status';A.date=date;A.filter=filter;updateHeader();setLoading('服薬状況をサーバーから読み込んでいます');
+  try{await loadMaster();await loadLogs(date);renderStatus()}catch(e){renderLoadFail('服薬状況を読み込めませんでした。'+errorMessage(e),()=>showStatus(date,filter))}
+}
+function renderLoadFail(message,retry){$('#app').innerHTML=`<div class="err">${esc(message)}</div><button id="retry">再試行</button><button id="back">確認画面に戻る</button>`;$('#retry').onclick=retry;$('#back').onclick=home}
+function renderStatus(){screen='status';updateHeader();const day=A.date,slot=A.filter;
+  const rows=C.prescriptions.filter(rx=>rx.isActive&&rx.startDate<=day&&!!rx.endDate&&day<=rx.endDate&&
+    repo.getResident(rx.residentId)?.is_active&&repo.getMedicine(rx.medicineId)?.is_active&&(slot==='すべて'||rx.timeSlot===slot))
+    .map(rx=>{const log=repo.findLog(rx.id,day,rx.timeSlot);return {rx,log,status:log?repo.getCurrentStatus(log):'未確認'}})
+    .sort((a,b)=>SLOTS.indexOf(a.rx.timeSlot)-SLOTS.indexOf(b.rx.timeSlot)||a.rx.residentId.localeCompare(b.rx.residentId));
+  const done=rows.filter(x=>x.status==='服薬済み').length,pending=rows.filter(x=>x.status==='未確認').length,attention=rows.length-done-pending;
+  $('#app').innerHTML=`<span class="section-label">サーバー共有 / 一覧</span><h2>服薬状況一覧</h2><p class="lead">パソコン・スマホで同じ記録を確認できます。「未確認」は未記録を意味します。</p>
+  <div class="card status-toolbar"><div><label class="status-date-label" for="date">日付</label><input type="date" id="date" value="${esc(day)}" class="status-date-field"></div>
+  <div><span class="status-date-label">時間帯</span><div class="status-tabs">${['すべて',...SLOTS].map(t=>`<button data-slot="${t}" class="${t===slot?'active':''}">${t}</button>`).join('')}</div></div></div>
+  <div class="status-summary"><div class="status-summary-item completed"><span class="status-count">${done}件</span><span class="status-heading">服薬済み</span></div>
+  <div class="status-summary-item"><span class="status-count">${pending}件</span><span class="status-heading">未確認</span></div>
+  <div class="status-summary-item alert"><span class="status-count">${attention}件</span><span class="status-heading">未服薬・拒否</span></div></div>
+  <div class="info-panel">${esc(day)} ／ 対象${rows.length}処方。最新の情報を見るときは「更新」を押してください。終了日が未設定の処方は表示しません。</div>
+  ${SLOTS.filter(t=>slot==='すべて'||slot===t).map(t=>{let list=rows.filter(x=>x.rx.timeSlot===t);return list.length?`<section class="card status-group"><div class="status-group-head"><h3>${t}</h3><small>${list.length}件</small></div>
+  ${list.map(x=>`<div class="status-entry"><div class="status-entry-info"><div class="status-person">${esc(repo.getResident(x.rx.residentId)?.name)}<span class="status-room">${esc(repo.getResident(x.rx.residentId)?.room||'—')}号室</span></div>
+  <div class="status-med">${esc(repo.getMedicine(x.rx.medicineId)?.name)} ／ ${esc(x.rx.dose)}</div>
+  </div><div class="status-result"><span class="status-pill ${x.status==='服薬済み'?'done':x.status==='未確認'?'pending':'attention'}">${esc(x.status)}</span>
+  ${x.log?`<span class="status-record-time">${hm(x.log.createdAt)}</span>`:''}</div></div>`).join('')}</section>`:''}).join('')||'<div class="status-empty">対象の処方はありません。</div>'}
+  <button class="pri" id="refresh">最新の情報に更新</button><button id="history">服薬履歴を見る</button><button id="back">確認画面に戻る</button>`;
+  $('#date').onchange=e=>{if(e.target.value)showStatus(e.target.value,slot)};
+  document.querySelectorAll('[data-slot]').forEach(b=>b.onclick=()=>showStatus(day,b.dataset.slot));
+  $('#refresh').onclick=()=>showStatus(day,slot);$('#history').onclick=()=>showHistory(day);$('#back').onclick=home;
+}
+async function showHistory(date=A.historyDate){stopScan();screen='history';A.historyDate=date;updateHeader();setLoading('服薬履歴を読み込んでいます');
+  try{await loadMaster();await loadLogs(date);renderHistory()}catch(e){renderLoadFail('服薬履歴を読み込めませんでした。'+errorMessage(e),()=>showHistory(date))}
+}
+function renderHistory(){screen='history';updateHeader();const logs=C.logs.filter(l=>!A.historyResident||l.residentId===A.historyResident);
+  $('#app').innerHTML=`<span class="section-label">サーバー共有 / 履歴</span><h2>服薬履歴・訂正履歴</h2>
+  <p class="lead">原記録は残し、訂正は別の履歴として追記します。訂正できるのは管理者だけです。</p>
+  <div class="card history-tools"><div><label for="hist-date">日付</label><input id="hist-date" type="date" value="${esc(A.historyDate)}"></div>
+  <div><label for="hist-person">利用者</label><select id="hist-person"><option value="">全員</option>${C.residents.map(r=>`<option value="${esc(r.id)}" ${A.historyResident===r.id?'selected':''}>${esc(r.name)}</option>`).join('')}</select></div></div>
+  <div class="table-wrap"><table><tr><th>時刻</th><th>利用者</th><th>薬・時間帯</th><th>現在の結果</th><th>担当</th><th>操作</th></tr>
+  ${logs.map(l=>{const changes=repo.getCorrections(l.id),now=repo.getCurrentStatus(l);
+    return `<tr class="${now!=='服薬済み'?'bad':''}"><td>${hm(l.createdAt)}</td>
+    <td>${esc(repo.getResident(l.residentId)?.name||'不明')}</td>
+    <td>${esc(repo.getMedicine(l.medicineId)?.name||'不明')}<br>${esc(l.timeSlot)}</td>
+    <td>${esc(now)}${changes.length?`<br><small>訂正${changes.length}回</small>`:''}</td>
+    <td>${esc(repo.getStaff(l.staffId)?.name||l.staffId)}</td><td><button class="action-link" data-audit="${esc(l.id)}">変更履歴</button>${staff.role==='admin'?`<button class="action-link" data-correct="${esc(l.id)}">訂正する</button>`:''}</td></tr>`}).join('')||'<tr><td colspan="6">記録がありません</td></tr>'}</table></div>
+  ${staff.role==='admin'?'<button id="csv">この日の履歴CSVを出力（管理者のみ）</button>':''}
+  <button class="pri" id="refresh">最新の情報に更新</button><button id="status">服薬状況を見る</button><button id="back">確認画面に戻る</button>`;
+  $('#hist-date').onchange=e=>{if(e.target.value)showHistory(e.target.value)};
+  $('#hist-person').onchange=e=>{A.historyResident=e.target.value;renderHistory()};
+  document.querySelectorAll('[data-audit]').forEach(b=>b.onclick=()=>showAudit(b.dataset.audit));
+  document.querySelectorAll('[data-correct]').forEach(b=>b.onclick=()=>showCorrection(b.dataset.correct));
+  if($('#csv'))$('#csv').onclick=()=>exportCsv(logs);
+  $('#refresh').onclick=()=>showHistory(A.historyDate);$('#status').onclick=()=>showStatus();$('#back').onclick=home;
+}
+function closeModal(d){d.remove()}
+function modal(html){const d=document.createElement('div');d.className='ov';d.innerHTML=`<div class="card correction-modal">${html}</div>`;document.body.appendChild(d);return d}
+function showAudit(logId){const log=C.logs.find(l=>l.id===logId);if(!log)return;const changes=repo.getCorrections(logId);
+  const d=modal(`<h2 style="font-size:22px">記録の変更履歴</h2><div class="audit-items">
+  <div class="audit-entry"><b>初回：${esc(log.status)}</b><br><small>${esc(log.createdAt)} ／ ${esc(repo.getStaff(log.staffId)?.name||log.staffId)}</small>${log.reason?`<p>${esc(log.reason)}</p>`:''}</div>
+  ${changes.map(c=>`<div class="audit-entry"><b>${esc(c.fromStatus)} → ${esc(c.toStatus)}</b><br><small>${esc(c.createdAt)} ／ ${esc(repo.getStaff(c.staffId)?.name||c.staffId)}</small><p>理由：${esc(c.reason)}</p></div>`).join('')}</div>
+  <button class="pri" id="close">閉じる</button>`);d.querySelector('#close').onclick=()=>closeModal(d);
+}
+function showCorrection(logId){if(staff.role!=='admin')return;const log=C.logs.find(l=>l.id===logId);if(!log)return;const expected=repo.getCurrentStatus(log);
+  const d=modal(`<h2 style="font-size:22px">服薬記録を訂正</h2><p class="lead">原記録を変更せず訂正履歴を追加します。管理者ログインが必要です。</p>
+  <div class="info-panel">初回：${esc(log.status)} ／ 現在：${esc(expected)}<br>訂正担当：${esc(staff.name)}</div>
+  <label for="new-status">訂正後の結果</label><select id="new-status">${STATUSES.map(x=>`<option value="${x}" ${x===expected?'selected':''}>${x}</option>`).join('')}</select>
+  <label for="corr-reason">訂正理由（5文字以上）</label><textarea id="corr-reason" maxlength="1000" placeholder="理由を具体的に入力してください"></textarea>
+  <div id="modal-error"></div><div class="row"><button id="cancel">戻る</button><button class="pri" id="commit">訂正を保存</button></div>`);
+  d.querySelector('#cancel').onclick=()=>closeModal(d);
+  d.querySelector('#commit').onclick=async()=>{
+    const status=d.querySelector('#new-status').value,reason=d.querySelector('#corr-reason').value.trim();
+    if(status===expected||reason.length<5){d.querySelector('#modal-error').innerHTML='<div class="err">結果を変更し、5文字以上の理由を入力してください。</div>';return}
+    if(!confirm('訂正履歴を追加しますか？原記録は変更されません。'))return;
+    const btn=d.querySelector('#commit');btn.disabled=true;
+    try{
+      const {data,error}=await client.rpc('medcheck_correct_medication',{p_log_id:logId,p_expected_status:expected,p_new_status:status,p_reason:reason});
+      if(error)throw error;
+      if(data?.result!=='corrected')throw new Error(data?.message||'訂正を保存できませんでした。');
+      closeModal(d);await showHistory(A.historyDate);
+    }catch(e){d.querySelector('#modal-error').innerHTML=`<div class="err">${esc('訂正が確認できませんでした。再度実行する前に履歴を確認してください。 '+errorMessage(e))}</div>`;btn.disabled=false}
+  };
+}
+function exportCsv(logs){
+  const cell=x=>{let str=String(x??'');if(/^[\s]*[=+@-]/.test(str))str="'"+str;return '"'+str.replace(/"/g,'""')+'"'};
+  const rows=[['日付','時刻','利用者','薬剤','処方ID','時間帯','初回結果','現在の結果','担当者','訂正回数']].concat(logs.map(l=>[
+    l.date,hm(l.createdAt),repo.getResident(l.residentId)?.name,repo.getMedicine(l.medicineId)?.name,l.prescriptionId,l.timeSlot,l.status,repo.getCurrentStatus(l),repo.getStaff(l.staffId)?.name,repo.getCorrections(l.id).length
+  ]));
+  const blob=new Blob(['\ufeff'+rows.map(row=>row.map(cell).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='服薬履歴_'+A.historyDate+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+async function init(){
+  const config=window.MEDCHECK_CONFIG||{};
+  if(config.environment !== 'staging' && config.environment !== 'production'){
+    screen='blocked';updateHeader();$('#app').innerHTML='<h2>環境設定が未完了です</h2><div class="err">config.js の environment は staging または production を指定してください。</div>';return;
+  }
+  if(config.environment==='production' && (config.releaseApproved!==true || !config.allowedHost || location.hostname!==config.allowedHost)){
+    screen='blocked';updateHeader();$('#app').innerHTML='<h2>本番利用はまだ許可されていません</h2><div class="err">施設の承認後に本番用config.jsの許可設定と公開ドメインを確認してください。誤接続防止のためログインを停止しています。</div>';return;
+  }
+  if(!config.url||config.url.includes('YOUR-PROJECT')||!config.publishableKey||config.publishableKey.includes('PASTE_')){
+    screen='blocked';updateHeader();$('#app').innerHTML=`<h2>Supabase接続設定が未完了です</h2><div class="info-panel">config.jsにProject URLとPublishable keyを入力してください。secret key・service_roleキーやデータベースのパスワードは絶対に入れないでください。</div>`;return;
+  }
+  if(!window.supabase?.createClient){screen='blocked';updateHeader();$('#app').innerHTML='<div class="err">Supabaseライブラリを読み込めません。ネットワーク接続を確認してください。</div>';return}
+  // URLを開くたびにログイン画面から開始するため、認証情報をブラウザに保存しない。
+  client=window.supabase.createClient(config.url,config.publishableKey,{auth:{persistSession:false,autoRefreshToken:true,detectSessionInUrl:false}});
+  $('#menu-toggle').onclick=()=>{$('#admin-drawer').hidden?openAdminMenu():closeAdminMenu()};
+  $('#admin-menu-overlay').onclick=closeAdminMenu;
+  $('#drawer-close').onclick=()=>{closeAdminMenu();$('#menu-toggle').focus()};
+  document.querySelectorAll('#admin-drawer [data-go]').forEach(b=>b.onclick=()=>goAdminMenu(b.dataset.go));
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#admin-drawer').hidden){closeAdminMenu();$('#menu-toggle').focus()}});
+  $('#logout').onclick=async()=>{stopScan();try{await client.auth.signOut()}finally{user=null;staff=null;C.staff=[];C.residents=[];C.medicines=[];C.prescriptions=[];C.logs=[];C.corrections=[];C.qrGroups=[];C.qrGroupItems=[];C.qrReady=false;renderLogin()}};
+  client.auth.onAuthStateChange((event)=>{if(event==='SIGNED_OUT'){stopScan();user=null;staff=null;C.staff=[];C.residents=[];C.medicines=[];C.prescriptions=[];C.logs=[];C.corrections=[];C.qrGroups=[];C.qrGroupItems=[];C.qrReady=false;A.qrText=null;renderLogin()}});
+  // 初回表示は必ずログイン画面。職員権限はログインに成功した後で初めて確認する。
+  renderLogin();
+}
+init();
+</script></body></html>
