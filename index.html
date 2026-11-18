@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><meta name="robots" content="noindex,nofollow">
-<title>服薬確認 | 本番導入準備版</title>
+<title>服薬確認</title>
 <script src="./config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
@@ -316,7 +316,7 @@ label.ack input { width: 21px; height: 21px; min-height: 0; flex-shrink: 0; acce
 .status-pill.attention { background: #fbe7e4; color: var(--danger); }
 .status-record-time { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
 .status-empty { background: #fff; border: 1px dashed #bdcac2; border-radius: 10px; padding: 26px 20px; text-align: center; color: var(--muted); font-size: 15px; }
-/* ---------- 訂正履歴 / 試作版のみ ---------- */
+/* ---------- 訂正履歴 ---------- */
 .demo-global { padding: 7px 16px; background: #fcf7ed; border-bottom: 1px solid #e6d7b7; color: #745c31; font-size: 12px; font-weight: 700; text-align: center; }
 
 .demo-safety { background: #fcf7ed; border: 1px solid #dfcda6; border-left: 4px solid #ae8744; padding: 13px 16px; border-radius: 7px; margin: 12px 0 22px; font-size: 14px; line-height: 1.7; }
@@ -369,7 +369,7 @@ tr.bad td { font-weight: 650; }
 }
 @media (prefers-reduced-motion: reduce) { button, .status-progress-fill { transition: none; } }
 
-/* Supabase移行版 */
+/* Supabaseログイン関連 */
 .login-shell {max-width:500px; margin:20px auto}
 .login-shell .err {white-space:pre-line; overflow-wrap:anywhere;}
 .login-shell label {font-size:14px;font-weight:700;display:block;margin:12px 0 5px}
@@ -2258,7 +2258,6 @@ function renderLogin(message=''){
   screen='login';staff=null;user=null;updateHeader();
   $('#app').innerHTML=`<div class="login-shell"><span class="section-label">職員専用</span><h2>ログイン</h2>
   <p class="lead">職員IDとパスワードでログインできます。最初に登録した管理者は、従来のメールアドレスでもログインできます。</p>
-  <div class="safety-panel">本番導入準備版です。施設の運用承認・セキュリティ検査が完了するまでは架空データのみを使用してください。</div>
   <form class="card" id="login-form"><label for="email">職員ID または メールアドレス</label><input type="text" id="email" required maxlength="160" autocomplete="username" placeholder="例：S002 または staff@example.com">
   <label for="password">パスワード</label><input type="password" id="password" required autocomplete="current-password">
   <button class="pri" type="submit" id="login-button">ログイン</button><div id="error" role="alert"></div></form>
@@ -2442,12 +2441,12 @@ function adminForm(kind){
   const id=nextAdminId(kind);
   if(kind==='resident')return `
     <label for="am-id">利用者ID（重複不可）</label><input id="am-id" name="id" required pattern="R[0-9]{3,8}" maxlength="9" value="${esc(id)}" autocomplete="off">
-    <label for="am-name">利用者名</label><input id="am-name" name="name" required maxlength="100" autocomplete="off" placeholder="例：テスト利用者B">
+    <label for="am-name">利用者名</label><input id="am-name" name="name" required maxlength="100" autocomplete="off" placeholder="例：利用者名">
     <label for="am-kana">フリガナ（任意）</label><input id="am-kana" name="kana" maxlength="100" autocomplete="off">
     <label for="am-room">部屋番号（任意）</label><input id="am-room" name="room" maxlength="50" autocomplete="off" placeholder="例：102">`;
   if(kind==='medicine')return `
     <label for="am-id">薬剤ID（重複不可）</label><input id="am-id" name="id" required pattern="M[0-9]{3,8}" maxlength="9" value="${esc(id)}" autocomplete="off">
-    <label for="am-name">薬剤名</label><input id="am-name" name="name" required maxlength="150" autocomplete="off" placeholder="例：テスト薬B">
+    <label for="am-name">薬剤名</label><input id="am-name" name="name" required maxlength="150" autocomplete="off" placeholder="例：薬剤名">
     <label for="am-shape">剤形（任意）</label><input id="am-shape" name="shape" maxlength="100" autocomplete="off" placeholder="例：錠剤">
     <label for="am-strength">規格（任意）</label><input id="am-strength" name="strength" maxlength="100" autocomplete="off" placeholder="例：5mg">
     <label for="am-note">備考（任意）</label><textarea id="am-note" name="note" maxlength="500" rows="2"></textarea>`;
@@ -2460,7 +2459,7 @@ function adminForm(kind){
     <label for="am-slot">服薬時間帯</label><select id="am-slot" name="time_slot" required><option value="">選択してください</option>${SLOTS.map(s=>`<option>${s}</option>`).join('')}</select>
     <label for="am-start">開始日</label><input id="am-start" name="start_date" type="date" required value="${todayJST()}">
     <label for="am-end">終了日</label><input id="am-end" name="end_date" type="date" required>
-    <p class="mini">テスト版では終了日も必須です。処方内容は保存後に書き換えず、変更する場合は旧処方を無効化して新しい処方IDを登録してください。</p>`;
+    <p class="mini">終了日は必須です。処方内容は保存後に書き換えず、変更する場合は旧処方を無効化して新しい処方IDを登録してください。</p>`;
 }
 function renderAdmin(kind='resident',info=''){
   if(!staff||staff.role!=='admin'){home();return;}
@@ -2474,7 +2473,7 @@ function renderAdmin(kind='resident',info=''){
   });
   $('#app').innerHTML=`<span class="section-label">管理者専用</span><h2>利用者・薬・処方の管理</h2>
     <p class="lead">管理者アカウントで登録・無効化できます。ほかの管理機能は右上の「≡」から切り替えられます。</p>
-    <div class="safety-panel">本番導入前の検証中です。施設の権限・監査・業務手順の検証が終わるまで架空データのみで操作してください。削除は行わず、過去の記録を残して無効化します。</div>
+    <p class="hint">登録情報は削除せず、過去の記録を残して無効化します。</p>
     <div class="admin-tabs">${Object.entries(ADMIN_META).map(([key,v])=>`<button type="button" class="${kind===key?'active':''}" data-admin-tab="${key}">${v.title}</button>`).join('')}</div>
     ${info?`<div class="info-panel" role="status">${esc(info)}</div>`:''}
     <form id="admin-create" class="card admin-form"><h3>新しい${ADMIN_META[kind].title}を登録</h3>
@@ -2640,7 +2639,7 @@ function renderStaffCreate(message=''){
     ${message?`<div class="info-panel" role="status">${esc(message)}</div>`:''}
     <form id="staff-admin-create" class="card admin-form">
       <label for="staff-new-id">職員ID（自動候補）</label><input id="staff-new-id" name="id" required pattern="S[0-9]{3,8}" maxlength="9" value="${esc(nextStaffId())}" autocomplete="off">
-      <label for="staff-new-name">職員名</label><input id="staff-new-name" name="name" required maxlength="100" autocomplete="off" placeholder="例：テスト職員B">
+      <label for="staff-new-name">職員名</label><input id="staff-new-name" name="name" required maxlength="100" autocomplete="off" placeholder="例：職員名">
       <p class="hint">権限：一般職員（固定）／招待メールなし／初回ログインでパスワード変更</p>
       <div id="error" role="alert"></div>
       <button class="pri" type="submit" id="staff-create-button">登録して初期パスワードを発行</button>
@@ -2670,7 +2669,7 @@ function renderStaffDetail(id,message=''){
     </form>
     <div class="card">
       <h3>アカウント設定</h3>
-      <p class="hint">無効化しても過去の服薬記録は削除されません。利用停止の反映はテスト環境で必ず確認してください。</p>
+      <p class="hint">無効化しても過去の服薬記録は削除されません。利用停止の反映を確認してください。</p>
       <div class="staff-detail-actions">
         <button type="button" id="staff-active-toggle" class="${row.is_active?'ng':''}">${row.is_active?'職員を無効化する':'職員を再有効化する'}</button>
         <button type="button" id="staff-reset-password">初期パスワードを再発行</button>
@@ -2807,8 +2806,8 @@ function renderQRAdmin(info=''){
   if(!Q.residentId||!C.residents.some(x=>x.id===Q.residentId&&x.is_active))Q.residentId=C.residents.find(x=>x.is_active)?.id||'';
   $('#app').innerHTML=`<span class="section-label">管理者専用</span><h2>QR作成・印刷</h2>
     <p class="lead">登録済み処方から、指定期間に使えるQRを処方・一包化グループごとに1枚ずつ作成・印刷します。Excelへの二重入力は不要です。</p>
-    <div class="safety-panel">本番導入前の検証中です。承認前は架空データのみで確認してください。期間付きQRはサーバー側でも日付と登録期間を照合します。毎回、当日の服薬予定・利用者・時間帯・薬袋の現物を確認してください。古い形式のQRと処方ID手入力では記録できません。処方変更時は旧ラベルを回収してください。</div>
-    ${C.qrReady?'':`<div class="err">03_QR一包化連携.sql が未設定か読み込めません。QR発行機能は停止しています。先にテスト用SupabaseでSQLを設定してください。</div>`}
+    <div class="safety-panel">期間付きQRはサーバー側でも日付と登録期間を照合します。毎回、当日の服薬予定・利用者・時間帯・薬袋の現物を確認してください。古い形式のQRと処方ID手入力では記録できません。処方変更時は旧ラベルを回収してください。</div>
+    ${C.qrReady?'':`<div class="err">03_QR一包化連携.sql が未設定か読み込めません。QR発行機能は停止しています。接続先のSupabaseでSQLを設定してください。</div>`}
     ${info?`<div class="info-panel" role="status">${esc(info)}</div>`:''}
     <div class="qr-top-actions"><button id="qr-show-print" class="${Q.panel==='print'?'active':''}">QR一覧・印刷</button><button id="qr-show-group" class="${Q.panel==='group'?'active':''}">一包化を登録</button></div>
     <div id="qr-content"></div>
@@ -2977,7 +2976,7 @@ function renderQRPrint(){
   const r=repo.getResident(Q.residentId);
   $('#app').innerHTML=`<div id="qr-page"><div id="print-toolbar"><h2>QR印刷プレビュー（期間内1枚）</h2>
     <p class="lead">${esc(r?.name||Q.residentId)} ／ ${esc(Q.slot)} ／ ${esc(Q.startDate)} ～ ${esc(Q.endDate)} ｜ ${data.items.length}枚</p>
-    <div class="safety-panel">1枚のQRを複数日に使用できます。QRは服薬済みの証明や薬の実物確認の代わりにはなりません。毎回、当日の服薬予定と現物を確認してください。処方変更後の古いラベルは回収してください。導入承認前は架空データのみで確認してください。</div>
+    <div class="safety-panel">1枚のQRを複数日に使用できます。QRは服薬済みの証明や薬の実物確認の代わりにはなりません。毎回、当日の服薬予定と現物を確認してください。処方変更後の古いラベルは回収してください。</div>
     <button class="pri" id="qr-print-button">QRラベルを印刷する</button><button id="qr-print-back">条件を変更する</button></div>
     <div class="qr-print-heading">${esc(r?.name||Q.residentId)} ／ ${esc(Q.slot)} ／ ${esc(Q.startDate)} ～ ${esc(Q.endDate)} （${data.items.length}枚）</div>
     <div class="qr-label-grid">${data.items.map(printLabel).join('')}</div></div>`;
@@ -3048,7 +3047,7 @@ function renderScan(){screen='flow';A.step=3;A.status=null;A.rsel='';A.rfree='';
   <button class="pri" id="start">カメラを起動する</button>
   <button type="button" id="alternate-camera">別のカメラ設定で試す</button>
   <div class="card"><h3>写真からQRを読み取る</h3><p class="hint">QRコードが鮮明に写ったPNG・JPEG画像を選択してください。</p><input type="file" id="qrphoto" accept="image/*" aria-label="QR画像を選択"></div>
-  <div class="safety-panel">本番導入準備版では処方IDの手入力を停止しています。必ず期間付きQR（MC2形式）を読み取ってください。処方変更後の旧QRは使わないでください。</div>
+  <div class="safety-panel">処方IDの手入力には対応していません。必ず期間付きQR（MC2形式）を読み取ってください。処方変更後の旧QRは使わないでください。</div>
   <button id="back">利用者選択へ戻る</button><canvas id="cv" hidden></canvas>`;
   $('#start').onclick=()=>startScan(false);
   $('#alternate-camera').onclick=()=>startScan(true);
@@ -3189,7 +3188,7 @@ async function onCode(raw){
   // 古い日付なしQR・MC1・手入力IDを受け付けない。保存時はサーバーでも再検証。
   const p=/^MC2\|(\d{4}-\d{2}-\d{2})\|(\d{4}-\d{2}-\d{2})\|([PG][0-9]{3,8})$/.exec(qrText);
   const range=p&&periodDates(p[1],p[2]);
-  if(!p||!range||range.error){renderScan();notify('このQRは本番導入準備版で使用できません。期間付きQRを管理者画面から発行してください。');return;}
+  if(!p||!range||range.error){renderScan();notify('このQRは使用できません。期間付きQRを管理者画面から発行してください。');return;}
   const today=todayJST();
   if(today<p[1]||today>p[2]){renderScan();notify('QRの使用期間外です。新しいQRを発行してください。');return;}
   const code=p[3];
