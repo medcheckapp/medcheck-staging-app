@@ -273,7 +273,18 @@ label.ack input { width: 21px; height: 21px; min-height: 0; flex-shrink: 0; acce
 /* ---------- Status overview ---------- */
 .status-toolbar { display: grid; gap: 17px; }
 .status-date-label { display: block; font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
-.status-date-field { max-width: 235px; }
+/* 服薬状況一覧：日付欄を画面幅に合わせて広げ、スマホ・iPadでも枠内に収める */
+.status-toolbar > div:first-child { min-width: 0; max-width: 100%; }
+.status-date-field {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 390px;
+  min-width: 0;
+  min-inline-size: 0;
+  overflow: hidden;
+  font-size: 16px;
+}
 .status-tabs { display: flex; flex-wrap: wrap; gap: 7px; }
 .status-tabs button {
   flex: 1 1 90px; min-height: 44px; margin: 0; padding: 9px 8px;
