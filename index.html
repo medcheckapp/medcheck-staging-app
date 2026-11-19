@@ -338,6 +338,73 @@ label.ack input { width: 21px; height: 21px; min-height: 0; flex-shrink: 0; acce
 .status-summary-item.completed .status-count { color: var(--main-dark); }
 .status-summary-item.alert .status-count { color: var(--danger); }
 .status-note { font-size: 13px; color: var(--muted); line-height: 1.7; margin: 6px 0 19px; }
+/* ---------- 服薬状況一覧 A型（上部件数はそのまま / 下部利用者一覧のみリスト化） ---------- */
+.status-group {
+  margin-top: 8px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.status-group-head {
+  padding: 10px 0 12px;
+  background: transparent;
+  border-bottom: 2px solid #dfe7e2;
+}
+.status-group-head h3 { font-size: 16px; }
+.status-group-head small { font-size: 12px; }
+.status-entry {
+  padding: 14px 0;
+  gap: 12px;
+  background: transparent;
+  border-bottom: 1px solid #e5ece8;
+}
+.status-entry:hover { background: transparent; }
+.status-person { font-size: 15px; }
+.status-room {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #f3f6f4;
+  color: #5f6d66;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+.status-med {
+  margin-top: 5px;
+  color: #24332c;
+}
+.status-detail {
+  margin-top: 4px;
+  color: #6c7872;
+  font-size: 12px;
+}
+.status-result {
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 92px;
+}
+.status-pill {
+  border-radius: 999px;
+  padding: 5px 10px;
+}
+.status-empty {
+  border: 0;
+  border-top: 2px dashed #cbd8d1;
+  border-bottom: 2px dashed #cbd8d1;
+  border-radius: 0;
+  background: transparent;
+  padding: 20px 0;
+}
+@media (max-width: 700px) {
+  .status-group-head { padding: 9px 0 10px; }
+  .status-entry { padding: 12px 0; }
+  .status-person { font-size: 14px; }
+  .status-room { margin-left: 0; margin-top: 4px; }
+  .status-result { min-width: 76px; }
+}
 .status-group { padding: 0; overflow: hidden; }
 .status-group-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; background: #f7f9f7; padding: 14px 19px; border-bottom: 1px solid var(--line); }
 .status-group-head h3 { margin: 0; font-size: 17px; }
