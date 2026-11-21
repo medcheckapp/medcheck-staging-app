@@ -1200,6 +1200,192 @@ body.mc-notices-open {overflow:hidden}
   .status-group .status-entry { transition: background .12s ease; }
 }
 /* ---------- /服薬状況一覧：利用者リスト可読性改善 ---------- */
+
+/* ---------- 共通の案内・お知らせ：案② コンパクトな1行案内型 ----------
+ * 画面共通の情報表示だけを変更。既存の操作/記録/QR印刷機能は変更しない。
+ * 重要エラー(.err/.warnbox/.res.ng/.mc-notice-urgent)は従来どおり強調。
+ */
+.info-panel,
+.qrguide,
+.safety-panel:not([role="alert"]),
+.mc-notice-item:not(.mc-notice-urgent),
+.status-empty,
+#history-view .history-empty {
+  box-sizing: border-box;
+  position: relative;
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  margin: 11px 0 15px;
+  padding: 11px 14px 11px 47px;
+  border: 0;
+  border-left: 0;
+  border-radius: 10px;
+  background: #eaf5f0;
+  box-shadow: none;
+  color: #335a4c;
+  font-size: 13.5px;
+  line-height: 1.65;
+  font-weight: 500;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.info-panel::before,
+.qrguide::before,
+.safety-panel:not([role="alert"])::before,
+.mc-notice-item:not(.mc-notice-urgent)::before,
+.status-empty::before,
+#history-view .history-empty::before {
+  content: "i";
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  border: 2px solid #24715b;
+  border-radius: 50%;
+  background: transparent;
+  color: #24715b;
+  font-family: system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 850;
+  line-height: 1;
+}
+/* 安全に関する注意文は、形を統一しつつ黄色で区別する。 */
+.safety-panel:not([role="alert"]) {
+  margin: 12px 0 17px;
+  background: #fff4dc;
+  color: #624c24;
+}
+.safety-panel:not([role="alert"])::before {
+  content: "!";
+  border: 0;
+  background: #b77c24;
+  color: #fff;
+  font-size: 15px;
+}
+/* タイプ説明・薬袋QR案内は通常の案内に揃える。 */
+.qrguide b { color: #2a624f; }
+/* ベル内のお知らせも通常項目のみフラットにし、緊急項目は従来の赤警告を残す。 */
+.mc-notice-item:not(.mc-notice-urgent) { margin: 0 0 10px; }
+.mc-notice-item:not(.mc-notice-urgent) .mc-notice-kind { color: #286b56; }
+.mc-notice-item:not(.mc-notice-urgent) .mc-notice-hint { color: #567063; }
+/* スマートフォンで横にはみ出さず、情報が長い場合は2行以上に自然に折り返す。 */
+@media (max-width: 480px) {
+  .info-panel,
+  .qrguide,
+  .safety-panel:not([role="alert"]),
+  .mc-notice-item:not(.mc-notice-urgent),
+  .status-empty,
+  #history-view .history-empty {
+    padding: 10px 11px 10px 42px;
+    border-radius: 9px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .info-panel::before,
+  .qrguide::before,
+  .safety-panel:not([role="alert"])::before,
+  .mc-notice-item:not(.mc-notice-urgent)::before,
+  .status-empty::before,
+  #history-view .history-empty::before {
+    top: 11px;
+    left: 11px;
+    width: 20px;
+    height: 20px;
+    font-size: 13px;
+  }
+}
+/* ---------- /共通案内デザイン ---------- */
+
+
+/* ---------- 不一致・エラー：案②と同じコンパクトな横長デザイン ----------
+ * 見た目のみ変更。赤系の色と「！」を残し、誤投薬防止の警告文を維持。
+ */
+.err,
+.warnbox,
+.res.ng,
+.safety-panel[role="alert"],
+.mc-notice-error,
+.mc-notice-item.mc-notice-urgent {
+  box-sizing: border-box;
+  position: relative;
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  margin: 11px 0 15px;
+  padding: 11px 14px 11px 47px;
+  border: 0;
+  border-left: 0;
+  border-radius: 10px;
+  background: #fff0ef;
+  box-shadow: none;
+  color: #8b302c;
+  font-size: 13.5px;
+  line-height: 1.65;
+  font-weight: 650;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.err::before,
+.warnbox::before,
+.res.ng::before,
+.safety-panel[role="alert"]::before,
+.mc-notice-error::before,
+.mc-notice-item.mc-notice-urgent::before {
+  content: "!";
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  background: #ad3d38;
+  color: #fff;
+  font-family: system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 850;
+  line-height: 1;
+}
+/* 結果パネル・通知の内側の表示内容は変えない。 */
+.res.ng .result-label,
+.mc-notice-item.mc-notice-urgent .mc-notice-kind { color: #8b302c; }
+@media (max-width: 480px) {
+  .err,
+  .warnbox,
+  .res.ng,
+  .safety-panel[role="alert"],
+  .mc-notice-error,
+  .mc-notice-item.mc-notice-urgent {
+    padding: 10px 11px 10px 42px;
+    border-radius: 9px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .err::before,
+  .warnbox::before,
+  .res.ng::before,
+  .safety-panel[role="alert"]::before,
+  .mc-notice-error::before,
+  .mc-notice-item.mc-notice-urgent::before {
+    top: 11px;
+    left: 11px;
+    width: 20px;
+    height: 20px;
+    font-size: 13px;
+  }
+}
+/* ---------- /不一致・エラー共通デザイン ---------- */
+
 </style><link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#286a5d">
 <meta name="apple-mobile-web-app-capable" content="yes">
