@@ -1533,6 +1533,91 @@ button.rc.mc-rx-paused .resident-name{color:var(--muted)}
   .admin-list > .admin-entry > .mc-rd-button-row { gap: 5px; }
 }
 /* ========== /登録済み3一覧のボタン配置 ========== */
+/* ===== 職員共通：体調・生活記録（登録済み一覧のデザインは変更しない） ===== */
+.mc-care-shell{max-width:900px;margin:0 auto;padding-bottom:24px}
+.mc-care-shell h2{margin:7px 0 4px;line-height:1.4}
+.mc-care-shell h3{font-size:17px;line-height:1.5;margin:0 0 9px}
+.mc-care-lead,.mc-care-muted{font-size:13px;color:var(--muted);line-height:1.7;margin:7px 0 14px}
+.mc-care-shell label{display:block;font-weight:700;font-size:14px;margin:11px 0 7px}
+.mc-care-shell input[type="search"],.mc-care-shell input[type="datetime-local"],
+.mc-care-shell input[type="number"],.mc-care-shell textarea,.mc-care-shell select{
+  display:block;width:100%;max-width:100%;box-sizing:border-box;margin:0;
+  border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);
+  font-size:16px;line-height:1.45;padding:10px 11px;min-height:44px;
+}
+.mc-care-shell textarea{min-height:80px;resize:vertical}
+.mc-care-shell select{font-size:14px}
+.mc-care-shell button:focus-visible,.mc-care-shell input:focus-visible,.mc-care-shell textarea:focus-visible,
+.mc-care-shell select:focus-visible{outline:3px solid var(--main);outline-offset:2px}
+.mc-care-residents{margin:15px 0 20px}
+.mc-care-person-row{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  width:100%;min-width:0;box-sizing:border-box;background:transparent;color:var(--ink);
+  border:0;border-bottom:1px solid var(--line);border-radius:0;text-align:left;
+  padding:13px 5px;min-height:64px;margin:0}
+.mc-care-person-row[hidden]{display:none}
+.mc-care-person-row:hover{background:#f5faf7}
+.mc-care-person-row > span:last-child{font-size:22px;color:var(--muted)}
+.mc-care-person{min-width:0;display:flex;flex-direction:column;gap:2px}
+.mc-care-person strong{font-size:16px;overflow-wrap:anywhere}
+.mc-care-person small,.mc-care-person-meta{font-size:13px;color:var(--muted);line-height:1.6}
+.mc-care-back{width:auto!important;display:inline-block;border:0!important;border-radius:5px!important;
+  color:var(--main-dark)!important;background:transparent!important;padding:9px 3px!important;
+  font-size:14px!important;font-weight:700!important;box-shadow:none!important;margin:4px 0 14px!important}
+.mc-care-launch{margin-top:9px!important;width:100%;min-height:45px;font-weight:750;color:var(--main-dark)!important;
+  background:#eff8f2!important;border:1px solid #a2c9b6!important;border-radius:8px!important}
+.mc-care-compose{padding:18px 0 20px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-top:17px}
+.mc-care-kind-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:13px 0 19px}
+.mc-care-shell .mc-care-kind{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;
+  min-width:0;min-height:75px;box-sizing:border-box;margin:0;padding:8px 3px;
+  border:1px solid #d6e2da;border-radius:10px;background:#fff;color:var(--ink);
+  font-size:13px;font-weight:650;line-height:1.3;text-align:center;overflow-wrap:anywhere}
+/* 記録ボタン: 絵文字を使わないアプリ専用ラインアイコン */
+.mc-care-shell .mc-care-kind{min-height:90px;gap:7px;padding:9px 3px;
+  border:1px solid #d5e2da;border-radius:9px;box-shadow:none;transition:background-color .15s,border-color .15s}
+.mc-care-shell .mc-care-kind .mc-care-symbol{display:flex;align-items:center;justify-content:center;
+  width:38px;height:38px;flex:0 0 38px;border-radius:12px;
+  background:#f0f6f2;color:#286d5a;}
+.mc-care-shell .mc-care-kind .mc-care-glyph{display:block;width:27px;height:27px;stroke:currentColor}
+.mc-care-shell .mc-care-kind .mc-care-kind-label{font-size:12px;font-weight:750;letter-spacing:0}
+.mc-care-shell .mc-care-kind[aria-pressed="true"]{border:2px solid #287b60;background:#ecf7ef;color:#185c47;
+  padding:8px 2px}
+.mc-care-shell .mc-care-kind[aria-pressed="true"] .mc-care-symbol{background:#d3eadc;color:#175d47}
+@media(hover:hover){.mc-care-shell .mc-care-kind:hover{background:#f7faf8;border-color:#8cb9a4}}
+@media(prefers-reduced-motion:reduce){.mc-care-shell .mc-care-kind{transition:none}}
+.mc-care-field{margin:13px 0 17px}
+.mc-care-field .mc-care-label{display:block;font-size:14px;font-weight:700;margin-bottom:10px}
+.mc-care-quick-options{display:flex;flex-wrap:wrap;gap:8px}
+.mc-care-shell .mc-care-chip{width:auto;min-height:41px;margin:0;padding:8px 12px;
+  border:1px solid #cbd9cf;border-radius:7px;background:#fff;color:var(--ink);font-size:14px;font-weight:650}
+.mc-care-shell .mc-care-chip[aria-pressed="true"]{border-color:#287b60;background:#e8f5ed;color:#165b44}
+.mc-care-shell .mc-care-save{display:block;margin-top:13px;min-height:48px}
+.mc-care-shell .mc-care-save:disabled{opacity:.58;cursor:progress}
+.mc-care-message{min-height:0;color:var(--main-dark);font-size:13px;line-height:1.65;font-weight:650;white-space:pre-wrap}
+.mc-care-timeline{padding:21px 0 8px}
+.mc-care-list-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.mc-care-list-head h3{margin:0}
+.mc-care-list-head select{width:auto;min-width:155px;max-width:100%;padding:8px;font-size:14px}
+.mc-care-record{margin:0;padding:15px 0;border-bottom:1px solid var(--line)}
+.mc-care-record-heading{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px 12px}
+.mc-care-record-heading strong{font-size:15px;color:var(--ink)}
+.mc-care-record-heading time{font-size:12px;color:var(--muted)}
+.mc-care-detail-text{font-size:14px;line-height:1.7;margin:7px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.mc-care-soft,.mc-care-record-meta{color:var(--muted)}
+.mc-care-record-meta{font-size:12px;line-height:1.6;margin-top:7px;overflow-wrap:anywhere}
+@media(max-width:560px){
+ .mc-care-kind-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+ .mc-care-shell .mc-care-kind{font-size:12px;min-height:87px}
+ .mc-care-shell .mc-care-kind .mc-care-symbol{width:36px;height:36px;flex-basis:36px}
+ .mc-care-shell .mc-care-kind .mc-care-glyph{width:26px;height:26px}
+ .mc-care-list-head select{max-width:100%;min-width:145px}
+}
+@media(max-width:340px){
+ .mc-care-shell .mc-care-kind{font-size:11px}
+ .mc-care-record-heading{display:block}
+ .mc-care-record-heading time{display:block;margin-top:3px}
+}
+/* ===== /職員共通：体調・生活記録 ===== */
+
 </style><link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#286a5d">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2173,6 +2258,281 @@ button.rc.mc-rx-paused .resident-name{color:var(--muted)}
       statusButton.before(actionRow);
       actionRow.append(button, statusButton);
     });
+    return result;
+  };
+})();
+
+/* 職員共通：利用者の体調・生活記録（既存の服薬記録とは完全に別管理） */
+(function medcheckCareNotes(){
+  'use strict';
+  // この画面専用の描き下ろしラインアイコン。外部ライブラリや絵文字は使用しない。
+  const KINDS = [
+    ['嘔吐','vomit'],['発熱','fever'],['体調不良','condition'],['転倒・転落','fall'],
+    ['食事','meal'],['水分','water'],['排泄','toilet'],['睡眠','sleep'],
+    ['痛み','pain'],['皮膚','skin'],['行動・様子','behavior'],['その他','other']
+  ];
+  const CARE_ICON_DRAWINGS = Object.freeze({
+    vomit: `<circle cx="11.3" cy="9.4" r="5"/><path d="M7.1 15.3c-1.9 1.4-3.1 3.1-3.3 6.4M15.2 15.3c1.3 1 2.2 2.4 2.6 4.1M15.2 12.5c3.3 0 5.1 1.8 5.7 4.5M21.3 19.1l-1.2 2.3M25 18.1l-1 2.3M28.1 21.7l-1.1 2.3M10 9h.1M13.7 9h.1"/>`,
+    fever: `<path d="M12.3 18.4V7.8a3.3 3.3 0 0 1 6.6 0v10.6a5.6 5.6 0 1 1-6.6 0Z"/><path d="M15.6 11.2v10.2M20.9 8h4M22.5 12h3M21.3 16h3"/><circle cx="15.6" cy="22.5" r="1.4"/>`,
+    condition: `<path d="M16 27s-11-6.6-11-14.7a5.9 5.9 0 0 1 11-2.7 5.9 5.9 0 0 1 11 2.7C27 20.4 16 27 16 27Z"/><path d="M7.6 16h4.5l2-4.2 3.1 8.5 2.2-4.3h4.9"/>`,
+    fall: `<circle cx="12.5" cy="6.3" r="3"/><path d="m14.9 11.4 4.8 4.7-4.2 4.1M14.9 11.4l-5.3 5.1-5.2.4M19.7 16.1l5.5-2.1M15.5 20.2l-3.7 5.2M3.6 28h24.8"/>`,
+    meal: `<path d="M5.3 16.5h21.4c-.4 6.3-4.2 9.3-10.7 9.3S5.7 22.8 5.3 16.5ZM9.1 29h13.8M14 4.3c-2.1 2.2 2.2 3.9 0 6.2M19 4.3c-2.1 2.2 2.2 3.9 0 6.2"/>`,
+    water: `<path d="M16 3.6C12.6 8.4 7.7 13.4 7.7 18.8a8.3 8.3 0 0 0 16.6 0C24.3 13.4 19.4 8.4 16 3.6Z"/><path d="M11.4 19.4a4.8 4.8 0 0 0 4.8 4.8M11.7 16.3l.9-1.8"/>`,
+    toilet: `<path d="M6.8 5.1h8v8.7h-8zM14.8 10.9h10V16c0 5.8-3.6 9.7-8.7 9.7h-2.5M12 13.9h14.3M12.4 25.7h10.7M20.8 25.7V29M9 8h3.7"/>`,
+    sleep: `<path d="M25.6 23.4A12 12 0 0 1 8.6 6.4a12 12 0 1 0 17 17Z"/><path d="m20.5 5.1.8 2.5 2.5.8-2.5.8-.8 2.5-.8-2.5-2.5-.8 2.5-.8ZM27.5 13.9v5M25 16.4h5"/>`,
+    pain: `<circle cx="15.9" cy="16" r="11.4"/><path d="m18.5 6.9-7.1 9 5 1.1-2.9 8.2 7.3-10.4-5.2-.7 2.9-7.2Z"/>`,
+    skin: `<rect x="5" y="9" width="22" height="14" rx="6.4" transform="rotate(-24 16 16)"/><path d="m12 12.2 8 7.6M19.8 12.2l-8 7.6"/><circle cx="12.6" cy="16" r=".5"/><circle cx="19.3" cy="16" r=".5"/>`,
+    behavior: `<path d="M4.5 9a5 5 0 0 1 5-5h13a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H13l-6.3 4v-4.7A5 5 0 0 1 4.5 19V9Z"/><circle cx="11" cy="14" r="1"/><circle cx="16" cy="14" r="1"/><circle cx="21" cy="14" r="1"/>`,
+    other: `<path d="M9.1 3.5h10l5 5V28H9.1a3 3 0 0 1-3-3V6.5a3 3 0 0 1 3-3Z"/><path d="M19.1 3.5v5h5M11 15.5h8M15 11.5v8M11 24h9"/>`
+  });
+  function careIconSvg(name){
+    const paths=CARE_ICON_DRAWINGS[name]||CARE_ICON_DRAWINGS.other;
+    return `<svg class="mc-care-glyph" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false" aria-hidden="true">${paths}</svg>`;
+  }
+  const OPTIONS = {
+    '嘔吐':['1回','2回','3回以上'],
+    '転倒・転落':['転倒','転落','尻もち'],
+    '食事':['全量','8割程度','半分程度','少量','摂取なし'],
+    '排泄':['排尿','排便','失禁','その他'],
+    '睡眠':['不眠','中途覚醒','傾眠','普段どおり'],
+    '痛み':['頭','腹部','腰','手足','その他'],
+    '皮膚':['発赤','傷','かゆみ','その他'],
+    '行動・様子':['普段と違う','落ち着かない','表情が乏しい','その他']
+  };
+  let activeResidentId = null;
+  let selectedKind = '';
+  let selectedQuick = '';
+  let filterKind = '';
+  let notes = [];
+  let hasMore = false;
+  let loading = false;
+  let saving = false;
+  let requestVersion = 0;
+  const PAGE = 50;
+  const isStaff = () => !!(user && staff && staff.is_active);
+  const getResident = id => C.residents.find(r=>r.id===id && r.is_active);
+  function careHeader(){
+    screen = 'care';
+    updateHeader();
+    const steps = $('#steps');
+    if(steps) steps.innerHTML = '<span class="on history-step">利用者の体調・生活記録</span>';
+  }
+  function jstInputNow(){
+    const x = new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date());
+    return x.replace(' ','T');
+  }
+  function formatTime(iso){
+    if(!iso) return '日時不明';
+    const d=new Date(iso);
+    return Number.isFinite(d.getTime()) ? d.toLocaleString('ja-JP',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}) : '日時不明';
+  }
+  function errorText(e){
+    if(['42P01','PGRST205','PGRST202'].includes(e?.code) || e?.status===404)
+      return '利用者記録用のSupabase SQLが未設定の可能性があります。管理者が「利用者記録_追加SQL.sql」を実行してください。';
+    return errorMessage(e);
+  }
+  function renderCareList(){
+    if(!isStaff()) {home();return;}
+    ++requestVersion;
+    loading=false;
+    activeResidentId=null;
+    careHeader();
+    const rows = C.residents.filter(r=>r.is_active).slice().sort((a,b)=>a.name.localeCompare(b.name,'ja'));
+    $('#app').innerHTML = `<div class="mc-care-shell">
+      <span class="section-label">職員共通 / 利用者記録</span>
+      <h2>利用者を選択</h2>
+      <p class="mc-care-lead">体調や生活の変化を記録・共有します。服薬時間帯に関係なく利用できます。</p>
+      <label for="mc-care-search">利用者検索</label>
+      <input type="search" id="mc-care-search" placeholder="氏名・ふりがな・部屋番号で検索" autocomplete="off">
+      <div id="mc-care-residents" class="mc-care-residents">
+      ${rows.map(r=>`<button type="button" class="mc-care-person-row" data-mc-care-person="${esc(r.id)}">
+        <span class="mc-care-person"><strong>${esc(r.name)}</strong><small>${esc(r.room||'部屋番号なし')}${r.room?'号室':''}${r.kana?' ／ '+esc(r.kana):''}</small></span><span aria-hidden="true">›</span>
+      </button>`).join('')}</div>
+      <p id="mc-care-no-match" class="mc-care-muted" hidden>該当する利用者はいません。</p>
+      <button type="button" class="mc-care-back" id="mc-care-home">← 服薬確認へ戻る</button>
+    </div>`;
+    $('#mc-care-home').onclick = home;
+    const input=$('#mc-care-search');
+    input.oninput=()=>{
+      const q=input.value.normalize('NFKC').replace(/\s/g,'').toLocaleLowerCase('ja');
+      let count=0;
+      rows.forEach((r,i)=>{
+        const target=[r.name,r.kana||'',r.room||'',r.id].join('').normalize('NFKC').replace(/\s/g,'').toLocaleLowerCase('ja');
+        const show=target.includes(q);
+        const btn=$('#mc-care-residents').children[i];
+        if(btn){btn.hidden=!show;if(show)count++;}
+      });
+      $('#mc-care-no-match').hidden=count!==0;
+    };
+    $('#mc-care-residents').onclick=e=>{
+      const b=e.target.closest('[data-mc-care-person]');
+      if(b) openResident(b.dataset.mcCarePerson);
+    };
+  }
+  function quickFields(){
+    const options=OPTIONS[selectedKind];
+    if(options){
+      return `<div class="mc-care-field"><span class="mc-care-label">簡単入力（任意）</span><div class="mc-care-quick-options">
+        ${options.map(o=>`<button type="button" class="mc-care-chip" data-mc-care-quick="${esc(o)}" aria-pressed="${o===selectedQuick}">${esc(o)}</button>`).join('')}
+      </div></div>`;
+    }
+    if(selectedKind==='発熱') return `<div class="mc-care-field"><label for="mc-care-amount">体温（℃）</label><input type="number" id="mc-care-amount" inputmode="decimal" min="34" max="43" step="0.1" placeholder="例：38.2"></div>`;
+    if(selectedKind==='水分') return `<div class="mc-care-field"><label for="mc-care-amount">水分量（mL）</label><input type="number" id="mc-care-amount" inputmode="numeric" min="0" max="5000" step="1" placeholder="例：150"></div>`;
+    return '';
+  }
+  function selectKind(kind){
+    if(!KINDS.some(x=>x[0]===kind))return;
+    selectedKind=kind;
+    selectedQuick='';
+    document.querySelectorAll('[data-mc-care-kind]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mcCareKind===kind)));
+    const target=$('#mc-care-fields');if(target)target.innerHTML=quickFields();
+    $('#mc-care-detail').placeholder = kind==='嘔吐'?'例：朝食後に1回。顔色や食事の様子など':kind==='転倒・転落'?'例：居室で尻もち。頭部打撲の有無など':'状況や気づいたことを自由に記入（必要な場合）';
+    target?.querySelectorAll('[data-mc-care-quick]').forEach(b=>b.onclick=()=>{
+      selectedQuick=b.dataset.mcCareQuick;
+      target.querySelectorAll('[data-mc-care-quick]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+    });
+  }
+  function renderNote(n){
+    return `<article class="mc-care-record">
+      <div class="mc-care-record-heading"><strong>${esc(n.category)}</strong><time>${esc(formatTime(n.occurred_at))}</time></div>
+      ${n.detail?`<p class="mc-care-detail-text">${esc(n.detail)}</p>`:''}
+      ${n.response?`<p class="mc-care-detail-text"><span class="mc-care-soft">対応：</span>${esc(n.response)}</p>`:''}
+      <div class="mc-care-record-meta">記入者：${esc(n.staff_name||'不明')}（${esc(n.staff_id||'IDなし')}） ／ 記入日時：${esc(formatTime(n.created_at))}</div>
+    </article>`;
+  }
+  function renderNotes(){
+    const target=$('#mc-care-history');if(!target)return;
+    target.innerHTML=notes.length?notes.map(renderNote).join(''):'<p class="mc-care-muted">まだ記録がありません。</p>';
+    const more=$('#mc-care-more');if(more)more.hidden=!hasMore;
+  }
+  async function fetchNotes(append=false){
+    const id=activeResidentId;
+    if(!id||!isStaff()||loading)return;
+    const token=++requestVersion;
+    loading=true;
+    const info=$('#mc-care-load-state');
+    if(info)info.textContent='記録を読み込んでいます…';
+    const from=append?notes.length:0;
+    try{
+      let q=client.from('medcheck_care_notes')
+        .select('id,resident_id,category,occurred_at,detail,response,staff_id,staff_name,created_at')
+        .eq('resident_id',id)
+        .order('occurred_at',{ascending:false})
+        .order('id',{ascending:false});
+      if(filterKind)q=q.eq('category',filterKind);
+      const {data,error}=await q.range(from,from+PAGE-1);
+      if(error)throw error;
+      if(token!==requestVersion||screen!=='care'||id!==activeResidentId)return;
+      notes=append?notes.concat(data||[]):(data||[]);
+      hasMore=(data||[]).length===PAGE;
+      renderNotes();
+      if(info) info.textContent='';
+    }catch(e){
+      if(token===requestVersion&&screen==='care'&&id===activeResidentId){
+        if(info)info.textContent='記録を取得できません。'+errorText(e);
+      }
+    }finally{loading=false;}
+  }
+  function openResident(id){
+    if(!isStaff()) {home();return;}
+    const r=getResident(id);if(!r){renderCareList();return;}
+    ++requestVersion;
+    loading=false;
+    activeResidentId=id;
+    selectedKind='';selectedQuick='';filterKind='';notes=[];hasMore=false;
+    careHeader();
+    $('#app').innerHTML = `<div class="mc-care-shell">
+      <span class="section-label">利用者記録 / 詳細</span>
+      <button type="button" class="mc-care-back" id="mc-care-to-list">← 利用者一覧に戻る</button>
+      <h2>${esc(r.name)}</h2>
+      <p class="mc-care-person-meta">${esc(r.id)}${r.room?' ／ '+esc(r.room)+'号室':''}</p>
+      <section class="mc-care-compose"><h3>新しい記録を追加</h3>
+        <p class="mc-care-muted">内容を選び、必要な状況だけ入力できます。</p>
+        <div class="mc-care-kind-grid" aria-label="記録する内容">
+          ${KINDS.map(([kind,icon])=>`<button type="button" class="mc-care-kind" data-mc-care-kind="${esc(kind)}" aria-pressed="false"><span class="mc-care-symbol" aria-hidden="true">${careIconSvg(icon)}</span><span class="mc-care-kind-label">${esc(kind)}</span></button>`).join('')}
+        </div>
+        <form id="mc-care-form">
+          <div id="mc-care-fields"></div>
+          <div class="mc-care-field"><label for="mc-care-at">発生日時</label><input type="datetime-local" id="mc-care-at" value="${jstInputNow()}" required></div>
+          <div class="mc-care-field"><label for="mc-care-detail">詳しい状況（必要に応じて）</label><textarea id="mc-care-detail" rows="3" maxlength="1000" placeholder="状況や気づいたことを自由に記入"></textarea></div>
+          <div class="mc-care-field"><label for="mc-care-response">対応・報告内容（任意）</label><textarea id="mc-care-response" rows="2" maxlength="1000" placeholder="例：看護職員へ報告、安静にして経過観察"></textarea></div>
+          <p class="mc-care-muted">記入者：${esc(staff.name)}（ログイン中の職員名をサーバーで確定します）</p>
+          <p class="mc-care-muted">※ 緊急時は記録より先に施設の対応・報告手順を優先してください。</p>
+          <button type="submit" class="pri mc-care-save" id="mc-care-save">この内容で記録する</button>
+          <p id="mc-care-save-info" role="status" class="mc-care-message" aria-live="polite"></p>
+        </form>
+      </section>
+      <section class="mc-care-timeline"><div class="mc-care-list-head"><h3>これまでの記録</h3>
+        <select id="mc-care-filter" aria-label="記録の種類で絞り込み"><option value="">すべての記録</option>${KINDS.map(x=>`<option value="${esc(x[0])}">${esc(x[0])}</option>`).join('')}</select>
+      </div><p id="mc-care-load-state" class="mc-care-muted" aria-live="polite"></p>
+      <div id="mc-care-history"></div>
+      <button type="button" class="mc-care-back" id="mc-care-more" hidden>さらに過去の記録を見る</button>
+      </section>
+    </div>`;
+    $('#mc-care-to-list').onclick=renderCareList;
+    document.querySelectorAll('[data-mc-care-kind]').forEach(b=>b.onclick=()=>selectKind(b.dataset.mcCareKind));
+    $('#mc-care-form').onsubmit=saveNote;
+    $('#mc-care-filter').onchange=e=>{++requestVersion;loading=false;filterKind=e.target.value;notes=[];hasMore=false;renderNotes();fetchNotes();};
+    $('#mc-care-more').onclick=()=>fetchNotes(true);
+    fetchNotes();
+  }
+  async function saveNote(e){
+    e.preventDefault();
+    if(saving||!activeResidentId||!getResident(activeResidentId)||!isStaff())return;
+    const state=$('#mc-care-save-info');
+    const kind=selectedKind;
+    if(!kind){state.textContent='記録する内容のボタンを選んでください。';return;}
+    const local=$('#mc-care-at')?.value;
+    const timestamp=local?new Date(local+':00+09:00'):null;
+    if(!timestamp||Number.isNaN(timestamp.getTime())){state.textContent='発生日時を入力してください。';return;}
+    let prefix='';
+    if(selectedQuick)prefix=selectedQuick;
+    const amount=$('#mc-care-amount');
+    if(amount&&amount.value!==''){
+      const value=Number(amount.value);
+      const min=Number(amount.min),max=Number(amount.max);
+      if(!Number.isFinite(value)||value<min||value>max){state.textContent='数値の入力を確認してください。';return;}
+      prefix=(kind==='発熱'?'体温 '+value.toFixed(1)+'℃':kind==='水分'?'水分 '+value+'mL':'');
+    }
+    const free=$('#mc-care-detail').value.trim(),response=$('#mc-care-response').value.trim();
+    const detail=[prefix,free].filter(Boolean).join(' ／ ');
+    if(['嘔吐','発熱','転倒・転落'].includes(kind)&&!detail){
+      state.textContent='この記録では、回数・体温などの簡単入力か、詳しい状況の記入が必要です。';return;
+    }
+    if(detail.length>1200||response.length>1200){state.textContent='文字数を減らしてください。';return;}
+    const id=activeResidentId;
+    saving=true;
+    const button=$('#mc-care-save');
+    button.disabled=true;button.textContent='保存中…';state.textContent='';
+    try{
+      const {data,error}=await client.rpc('medcheck_care_add_note',{
+        p_resident_id:id,p_category:kind,p_occurred_at:timestamp.toISOString(),
+        p_detail:detail,p_response:response
+      });
+      if(error)throw error;
+      if(data?.result!=='created')throw new Error('保存完了を確認できませんでした。管理者にお問い合わせください。');
+      if(screen==='care' && activeResidentId===id){
+        openResident(id);
+        const msg=$('#mc-care-save-info');if(msg)msg.textContent='記録を保存しました。';
+      }
+    }catch(err){
+      if(screen==='care'&&activeResidentId===id){
+        state.textContent='保存できませんでした。再送信前に記録一覧を確認してください。'+errorText(err);
+        button.disabled=false;button.textContent='この内容で記録する';
+      }
+    }finally{saving=false;}
+  }
+  const originalRenderHome=renderHome;
+  renderHome=function(...args){
+    const result=originalRenderHome.apply(this,args);
+    if(isStaff()&&$('#show-history')&&!$('#mc-care-open')){
+      const btn=document.createElement('button');
+      btn.type='button';btn.id='mc-care-open';
+      btn.textContent='利用者検索・体調／生活記録';
+      btn.className='mc-care-launch';
+      btn.onclick=renderCareList;
+      $('#show-history').insertAdjacentElement('afterend',btn);
+    }
     return result;
   };
 })();
