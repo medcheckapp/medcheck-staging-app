@@ -1637,6 +1637,40 @@ button.rc.mc-rx-paused .resident-name{color:var(--muted)}
 #mc-care-open {
   display: none !important;
 }
+
+/* 利用者記録：スマホで「発生日時」の日時入力が右にはみ出すのを防止。
+   入力値・保存処理は変更せず、日時入力欄だけ幅を調整する。 */
+.mc-care-shell #mc-care-form,
+.mc-care-shell #mc-care-form > .mc-care-field {
+  min-width: 0;
+  max-width: 100%;
+}
+.mc-care-shell #mc-care-at {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+@media (max-width: 560px) {
+  .mc-care-shell #mc-care-at {
+    inline-size: 100%;
+    max-inline-size: 100%;
+    min-inline-size: 0;
+    padding-inline: 7px;
+    font-size: 16px;
+    letter-spacing: normal;
+  }
+  .mc-care-shell #mc-care-at::-webkit-date-and-time-value,
+  .mc-care-shell #mc-care-at::-webkit-datetime-edit,
+  .mc-care-shell #mc-care-at::-webkit-datetime-edit-fields-wrapper {
+    min-width: 0;
+  }
+  .mc-care-shell #mc-care-at::-webkit-calendar-picker-indicator {
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+}
 </style><link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#286a5d">
 <meta name="apple-mobile-web-app-capable" content="yes">
