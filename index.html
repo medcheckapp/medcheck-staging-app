@@ -2136,7 +2136,6 @@ button.rc.mc-rx-paused .resident-name{color:var(--muted)}
       ${mcRDSlotList(current,resident,today)}
       ${other.length ? `<details class="mc-rd-archived"><summary>その他の登録処方（開始前・終了・無効など：${other.length}件）</summary>${mcRDSlotList(other,resident,today)}</details>` : ''}
       <p class="mc-rd-caption">※ 薬剤情報・処方期間の登録内容を表示しています。実際の薬袋の中身や当日の服薬を保証するものではありません。</p>
-      <div class="mc-rd-actions"><button type="button" data-mc-rd-back>← 登録済み利用者に戻る</button></div>
     </div>`;
     document.querySelectorAll('[data-mc-rd-back]').forEach(button => { button.onclick = () => renderAdmin('resident'); });
     $('#mc-rd-refresh').onclick = async () => {
