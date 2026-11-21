@@ -1455,6 +1455,84 @@ button.rc.mc-rx-paused{opacity:1;background:#f8faf9;border-color:var(--line);cur
 button.rc.mc-rx-paused::after{display:none}
 button.rc.mc-rx-paused .resident-name{color:var(--muted)}
 .mc-rx-status{flex:0 0 auto;max-width:45%;font-size:12px;font-weight:700;color:#8b6228;text-align:right;overflow-wrap:anywhere}
+
+/* ========== 管理者：登録済み3一覧の操作ボタンを名前と同じ行へ ========== */
+/* 対象は「登録済みの利用者・薬剤・処方」の一覧だけ。QR登録や他の画面は対象外。 */
+.admin-list > .admin-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  grid-template-areas: "state actions" "title actions" "sub sub";
+  align-items: center;
+  column-gap: 9px;
+  row-gap: 2px;
+  min-width: 0;
+}
+.admin-list > .admin-entry > .admin-state {
+  grid-area: state;
+  min-width: 0;
+}
+.admin-list > .admin-entry > b {
+  grid-area: title;
+  min-width: 0;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.admin-list > .admin-entry > .admin-sub {
+  grid-area: sub;
+  min-width: 0;
+  margin-top: 4px;
+  line-height: 1.5;
+}
+/* 薬剤・処方：1つの有効・無効化ボタンを右端に固定 */
+.admin-list > .admin-entry > button[data-admin-id] {
+  grid-area: actions;
+  justify-self: end;
+  align-self: center;
+  flex: none;
+  margin: 0;
+  padding: 8px 10px;
+  min-height: 40px;
+  width: auto;
+  white-space: nowrap;
+}
+/* 利用者：「詳細を見る」「無効化する」を常に同じ行に並べる */
+.admin-list > .admin-entry > .mc-rd-button-row {
+  grid-area: actions;
+  justify-self: end;
+  align-self: center;
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+.admin-list > .admin-entry > .mc-rd-button-row > button {
+  flex: none;
+  min-height: 40px;
+  width: auto;
+  margin: 0;
+  padding: 8px 10px;
+  white-space: nowrap;
+}
+@media (max-width: 480px) {
+  .admin-list > .admin-entry {
+    padding: 11px 10px;
+    column-gap: 6px;
+  }
+  .admin-list > .admin-entry > b { font-size: 14px; }
+  .admin-list > .admin-entry > button[data-admin-id],
+  .admin-list > .admin-entry > .mc-rd-button-row > button {
+    font-size: 11px;
+    padding: 7px 6px;
+    min-height: 40px;
+  }
+  .admin-list > .admin-entry > .mc-rd-button-row { gap: 5px; }
+}
+/* ========== /登録済み3一覧のボタン配置 ========== */
 </style><link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#286a5d">
 <meta name="apple-mobile-web-app-capable" content="yes">
