@@ -1386,6 +1386,47 @@ body.mc-notices-open {overflow:hidden}
 }
 /* ---------- /不一致・エラー共通デザイン ---------- */
 
+
+/* 管理者 > 登録済み利用者 > 詳細を見る（登録薬の読み取り専用表示） */
+.admin-entry .mc-rd-open {
+  color:var(--main-dark);border:1px solid var(--main);background:#fff;
+  margin-right:8px;font-weight:700;
+}
+.admin-entry .mc-rd-open:focus-visible,
+.mc-rd-shell button:focus-visible,
+.mc-rd-shell summary:focus-visible { outline:3px solid var(--main);outline-offset:2px; }
+.mc-rd-shell{max-width:920px;margin:0 auto;}
+.mc-rd-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 20px;}
+.mc-rd-actions button{width:auto;margin:0;min-height:42px;}
+.mc-rd-person{border-bottom:1px solid var(--line);padding:7px 0 16px;margin-bottom:16px;}
+.mc-rd-person-name{font-size:22px;font-weight:800;line-height:1.4;margin:3px 0 8px;overflow-wrap:anywhere;}
+.mc-rd-person-meta{font-size:13px;color:var(--muted);line-height:1.7;overflow-wrap:anywhere;}
+.mc-rd-caption{color:var(--muted);font-size:13px;line-height:1.65;margin:5px 0 18px;}
+.mc-rd-section-title{font-size:18px;line-height:1.5;margin:23px 0 8px;}
+.mc-rd-empty{color:var(--muted);font-size:14px;padding:15px 0;border-bottom:1px solid var(--line);}
+.mc-rd-slot-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  font-weight:750;color:var(--main-dark);border-bottom:1px solid var(--line);
+  margin:20px 0 0;padding:0 0 8px;font-size:15px;}
+.mc-rd-slot-count{font-weight:500;color:var(--muted);font-size:12px;}
+.mc-rd-med{padding:13px 0 12px;border-bottom:1px solid var(--line);}
+.mc-rd-med-top{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:5px 10px;}
+.mc-rd-med-name{font-size:16px;font-weight:700;color:var(--ink);line-height:1.5;overflow-wrap:anywhere;}
+.mc-rd-med-strength{font-size:13px;color:var(--muted);font-weight:500;margin-left:5px;}
+.mc-rd-med-dose{font-size:14px;font-weight:700;line-height:1.6;margin-top:4px;overflow-wrap:anywhere;}
+.mc-rd-med-meta{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.7;overflow-wrap:anywhere;}
+.mc-rd-med-note{font-size:12px;color:var(--muted);margin-top:3px;overflow-wrap:anywhere;}
+.mc-rd-state{display:inline-block;font-weight:700;font-size:12px;white-space:nowrap;color:var(--main-dark);}
+.mc-rd-state.is-other{color:var(--muted);}
+.mc-rd-state.is-disabled{color:var(--danger);}
+.mc-rd-archived{margin-top:20px;border-top:1px solid var(--line);}
+.mc-rd-archived summary{cursor:pointer;font-weight:700;padding:14px 4px;line-height:1.6;}
+.mc-rd-archived[open] summary{border-bottom:1px solid var(--line);}
+@media(max-width:480px){
+  .admin-entry .mc-rd-open{max-width:100%;}
+  .mc-rd-person-name{font-size:20px;}
+  .mc-rd-med-name{font-size:15px;}
+  .mc-rd-actions button{flex:1 1 145px;}
+}
 </style><link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#286a5d">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1884,6 +1925,112 @@ body.mc-notices-open {overflow:hidden}
       fetchNotices();
     }
   }, REFRESH_MS);
+})();
+
+
+/* 管理者：登録済み利用者に「詳細を見る」を追加。既存処方を参照するだけで保存処理は行わない。 */
+(function() {
+  'use strict';
+  function mcRDIsAdmin() { return !!(staff && staff.role === 'admin'); }
+  function mcRDState(rx, resident, day) {
+    const med = repo.getMedicine(rx.medicineId);
+    if (!rx.isActive) return {text:'無効化済み',klass:'is-disabled',current:false};
+    if (!resident.is_active) return {text:'利用者が無効',klass:'is-disabled',current:false};
+    if (!med || !med.is_active) return {text:'薬剤が無効',klass:'is-disabled',current:false};
+    if (!rx.startDate || !rx.endDate) return {text:'処方期間を要確認',klass:'is-disabled',current:false};
+    if (rx.startDate > day) return {text:'開始前',klass:'is-other',current:false};
+    if (rx.endDate < day) return {text:'期間終了',klass:'is-other',current:false};
+    return {text:'現在有効',klass:'',current:true};
+  }
+  function mcRDRow(rx, resident, day) {
+    const medicine = repo.getMedicine(rx.medicineId);
+    const state = mcRDState(rx, resident, day);
+    const medName = medicine?.name || ('薬剤ID：' + rx.medicineId + '（情報なし）');
+    const strength = medicine?.strength || '';
+    const shape = medicine?.shape || '';
+    const note = medicine?.note || '';
+    return `<div class="mc-rd-med">
+      <div class="mc-rd-med-top">
+        <div class="mc-rd-med-name">${esc(medName)}${strength ? `<span class="mc-rd-med-strength">${esc(strength)}</span>` : ''}</div>
+        <span class="mc-rd-state ${state.klass}">${esc(state.text)}</span>
+      </div>
+      <div class="mc-rd-med-dose">1回量：${esc(rx.dose || '未設定')}${shape ? ` <span class="mc-rd-med-strength">／ ${esc(shape)}</span>` : ''}</div>
+      <div class="mc-rd-med-meta">処方ID：${esc(rx.id)}　／　期間：${esc(rx.startDate || '未設定')} ～ ${esc(rx.endDate || '未設定')}</div>
+      ${note ? `<div class="mc-rd-med-note">備考：${esc(note)}</div>` : ''}
+    </div>`;
+  }
+  function mcRDSlotList(rows, resident, day) {
+    if (!rows.length) return '<p class="mc-rd-empty">該当する処方はありません。</p>';
+    const slotNames = [...SLOTS, 'その他'];
+    return slotNames.map(slot => {
+      const picked = rows.filter(rx => SLOTS.includes(rx.timeSlot) ? rx.timeSlot === slot : slot === 'その他');
+      if (!picked.length) return '';
+      return `<section class="mc-rd-slot"><h4 class="mc-rd-slot-heading"><span>${esc(slot)}</span><span class="mc-rd-slot-count">${picked.length}処方</span></h4>
+        ${picked.map(rx=>mcRDRow(rx, resident, day)).join('')}</section>`;
+    }).join('');
+  }
+  function mcRDRenderDetail(residentId) {
+    if (!mcRDIsAdmin()) { home(); return; }
+    const resident = repo.getResident(residentId);
+    if (!resident) { renderAdmin('resident', '対象の利用者が見つかりません。'); return; }
+    stopScan();
+    screen = 'admin';
+    updateHeader();
+    const today = todayJST();
+    const rxList = C.prescriptions.filter(rx => rx.residentId === residentId).slice().sort((a,b) =>
+      SLOTS.indexOf(a.timeSlot) - SLOTS.indexOf(b.timeSlot) || a.id.localeCompare(b.id,'ja'));
+    const current = rxList.filter(rx => mcRDState(rx,resident,today).current);
+    const other = rxList.filter(rx => !mcRDState(rx,resident,today).current);
+    const room = resident.room ? ` ／ ${esc(resident.room)}号室` : '';
+    const kana = resident.kana ? ` ／ ${esc(resident.kana)}` : '';
+    $('#app').innerHTML = `<div class="mc-rd-shell">
+      <span class="section-label">管理者専用 ／ 利用者管理</span>
+      <h2>利用者の詳細・登録薬</h2>
+      <div class="mc-rd-actions"><button type="button" data-mc-rd-back>← 登録済み利用者に戻る</button><button type="button" id="mc-rd-refresh">最新情報に更新</button></div>
+      <div class="mc-rd-person">
+        <div class="mc-rd-person-name">${esc(resident.name)}</div>
+        <div class="mc-rd-person-meta">利用者ID：${esc(resident.id)}${room}${kana} ／ ${resident.is_active?'有効':'無効'}</div>
+      </div>
+      <p class="mc-rd-caption">登録済みの処方を読み取り専用で表示しています。現在有効かどうかは${esc(today)}時点の登録内容で判定しています。</p>
+      <h3 class="mc-rd-section-title">現在有効な処方（${current.length}件）</h3>
+      ${mcRDSlotList(current,resident,today)}
+      ${other.length ? `<details class="mc-rd-archived"><summary>その他の登録処方（開始前・終了・無効など：${other.length}件）</summary>${mcRDSlotList(other,resident,today)}</details>` : ''}
+      <p class="mc-rd-caption">※ 薬剤情報・処方期間の登録内容を表示しています。実際の薬袋の中身や当日の服薬を保証するものではありません。</p>
+      <div class="mc-rd-actions"><button type="button" data-mc-rd-back>← 登録済み利用者に戻る</button></div>
+    </div>`;
+    document.querySelectorAll('[data-mc-rd-back]').forEach(button => { button.onclick = () => renderAdmin('resident'); });
+    $('#mc-rd-refresh').onclick = async () => {
+      const button = $('#mc-rd-refresh');
+      if (!mcRDIsAdmin() || adminBusy) return;
+      button.disabled = true;
+      button.textContent = '更新中…';
+      try {
+        await loadMaster();
+        mcRDRenderDetail(residentId);
+      } catch(e) {
+        notify('最新情報の取得に失敗しました。' + errorMessage(e));
+        button.disabled = false;
+        button.textContent = '最新情報に更新';
+      }
+    };
+  }
+  const mcRDOriginalRenderAdmin = renderAdmin;
+  renderAdmin = function(kind='resident', info='') {
+    const result = mcRDOriginalRenderAdmin.call(this,kind,info);
+    if (kind !== 'resident' || !mcRDIsAdmin()) return result;
+    document.querySelectorAll('.admin-list .admin-entry').forEach(entry => {
+      const statusButton = entry.querySelector('button[data-admin-id]');
+      if (!statusButton || entry.querySelector('.mc-rd-open')) return;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'mc-rd-open';
+      button.textContent = '詳細を見る';
+      button.setAttribute('aria-label',statusButton.dataset.adminId+' の登録薬・利用者詳細を見る');
+      button.addEventListener('click',() => mcRDRenderDetail(statusButton.dataset.adminId));
+      statusButton.before(button);
+    });
+    return result;
+  };
 })();
 
 init();</script><script defer src="./pwa-register.js"></script></body></html>
