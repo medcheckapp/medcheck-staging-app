@@ -2374,7 +2374,7 @@ button.rc.mc-rx-paused .resident-name{color:var(--muted)}
     return `<div class="mc-care-field mc-care-datetime-field">
       <div class="mc-care-datetime-title" id="mc-care-datetime-title">発生日時</div>
       <div class="mc-care-date-row" role="group" aria-label="発生日付">
-        <label class="mc-care-datepart" for="mc-care-year">年<select id="mc-care-year" required>${options(y-15,y+2,y,false)}</select></label>
+        <label class="mc-care-datepart" for="mc-care-year">年<select id="mc-care-year" required>${options(y-15,y+24,y,false)}</select></label>
         <label class="mc-care-datepart" for="mc-care-month">月<select id="mc-care-month" required>${options(1,12,mo,true)}</select></label>
         <label class="mc-care-datepart" for="mc-care-day">日<select id="mc-care-day" required>${options(1,31,d,true)}</select></label>
       </div>
