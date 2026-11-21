@@ -338,73 +338,6 @@ label.ack input { width: 21px; height: 21px; min-height: 0; flex-shrink: 0; acce
 .status-summary-item.completed .status-count { color: var(--main-dark); }
 .status-summary-item.alert .status-count { color: var(--danger); }
 .status-note { font-size: 13px; color: var(--muted); line-height: 1.7; margin: 6px 0 19px; }
-/* ---------- 服薬状況一覧 A型（上部件数はそのまま / 下部利用者一覧のみリスト化） ---------- */
-.status-group {
-  margin-top: 8px;
-  background: transparent;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-}
-.status-group-head {
-  padding: 10px 0 12px;
-  background: transparent;
-  border-bottom: 2px solid #dfe7e2;
-}
-.status-group-head h3 { font-size: 16px; }
-.status-group-head small { font-size: 12px; }
-.status-entry {
-  padding: 14px 0;
-  gap: 12px;
-  background: transparent;
-  border-bottom: 1px solid #e5ece8;
-}
-.status-entry:hover { background: transparent; }
-.status-person { font-size: 15px; }
-.status-room {
-  display: inline-block;
-  margin-left: 6px;
-  padding: 1px 7px;
-  border-radius: 999px;
-  background: #f3f6f4;
-  color: #5f6d66;
-  font-size: 11px;
-  font-weight: 700;
-  vertical-align: middle;
-}
-.status-med {
-  margin-top: 5px;
-  color: #24332c;
-}
-.status-detail {
-  margin-top: 4px;
-  color: #6c7872;
-  font-size: 12px;
-}
-.status-result {
-  align-items: flex-end;
-  justify-content: center;
-  min-width: 92px;
-}
-.status-pill {
-  border-radius: 999px;
-  padding: 5px 10px;
-}
-.status-empty {
-  border: 0;
-  border-top: 2px dashed #cbd8d1;
-  border-bottom: 2px dashed #cbd8d1;
-  border-radius: 0;
-  background: transparent;
-  padding: 20px 0;
-}
-@media (max-width: 700px) {
-  .status-group-head { padding: 9px 0 10px; }
-  .status-entry { padding: 12px 0; }
-  .status-person { font-size: 14px; }
-  .status-room { margin-left: 0; margin-top: 4px; }
-  .status-result { min-width: 76px; }
-}
 .status-group { padding: 0; overflow: hidden; }
 .status-group-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; background: #f7f9f7; padding: 14px 19px; border-bottom: 1px solid var(--line); }
 .status-group-head h3 { margin: 0; font-size: 17px; }
@@ -1098,6 +1031,175 @@ body.mc-notices-open {overflow:hidden}
   .mc-notice-footer {padding:10px}
 }
 @media print { #mc-notification-bell, .mc-notice-shade { display:none!important } }
+
+/* ---------- 服薬状況一覧：利用者リスト可読性改善（この範囲のみ） ---------- */
+/* 集計・進捗・フィルター等の既存画面は変更しない */
+.status-group.card {
+  margin: 20px 0 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+.status-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 2px 12px;
+  background: transparent;
+  border-bottom: 2px solid #b8d2c4;
+}
+.status-group-head h3 {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  color: #245546;
+  font-size: 17px;
+  line-height: 1.45;
+  font-weight: 800;
+}
+.status-group-head h3::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 21px;
+  flex: 0 0 7px;
+  border-radius: 4px;
+  background: #3c8b6c;
+}
+.status-group-head small {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #e7f0ea;
+  color: #335f4b;
+  font-size: 12px;
+  line-height: 1.5;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.status-group .status-entry {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 80px;
+  padding: 13px 5px 13px 14px;
+  background: transparent;
+  border-bottom: 1px solid #dce5df;
+}
+.status-group .status-entry:last-child { border-bottom: 1px solid #dce5df; }
+.status-group .status-entry::before {
+  content: "";
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  left: 0;
+  width: 3px;
+  border-radius: 3px;
+  background: #c4d5c9;
+}
+@supports selector(.status-entry:has(.status-pill.done)) {
+  .status-group .status-entry:has(.status-pill.done)::before { background: #4e9a71; }
+  .status-group .status-entry:has(.status-pill.pending)::before { background: #d4a744; }
+  .status-group .status-entry:has(.status-pill.attention)::before { background: #c86d63; }
+}
+.status-group .status-entry:hover { background: #f0f5f1; }
+.status-group .status-entry-info { min-width: 0; }
+.status-group .status-person {
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.45;
+  color: #203c31;
+  overflow-wrap: anywhere;
+}
+.status-group .status-room {
+  display: inline-block;
+  vertical-align: 2px;
+  margin: 0 0 0 9px;
+  padding: 2px 8px;
+  border: 1px solid #dce6df;
+  border-radius: 5px;
+  background: #f4f7f5;
+  color: #596d61;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.status-group .status-med {
+  margin-top: 5px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #53635a;
+  overflow-wrap: anywhere;
+}
+.status-group .status-result {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+  min-width: 83px;
+  gap: 5px;
+}
+.status-group .status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 29px;
+  border-radius: 6px;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.status-group .status-pill::before { font-size: 13px; font-weight: 900; }
+.status-group .status-pill.done { background: #e1f3e7; color: #1f6645; }
+.status-group .status-pill.done::before { content: "✓"; }
+.status-group .status-pill.pending { background: #fff3d9; color: #805918; }
+.status-group .status-pill.pending::before { content: "•"; }
+.status-group .status-pill.attention { background: #fae8e5; color: #a33d36; }
+.status-group .status-pill.attention::before { content: "!"; }
+.status-group .status-record-time {
+  color: #69756e;
+  font-size: 11px;
+  line-height: 1.45;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.status-group .status-record-time::before { content: "記録 "; }
+.status-empty {
+  border: 1px dashed #bccdc0;
+  border-radius: 8px;
+  background: #f8faf8;
+  color: #5e7266;
+}
+@media (max-width: 480px) {
+  .status-group.card { margin-top: 19px; margin-bottom: 23px; padding: 0; }
+  .status-group-head { padding: 6px 2px 10px; }
+  .status-group-head h3 { font-size: 16px; }
+  .status-group .status-entry { grid-template-columns: minmax(0, 1fr) auto; gap: 7px; padding: 13px 0 13px 12px; min-height: 76px; }
+  .status-group .status-person { font-size: 15px; }
+  .status-group .status-room { margin-left: 5px; padding: 2px 5px; font-size: 10px; }
+  .status-group .status-med { font-size: 12px; line-height: 1.55; }
+  .status-group .status-result { min-width: 73px; gap: 5px; }
+  .status-group .status-pill { font-size: 11px; padding: 5px 7px; }
+  .status-group .status-record-time { font-size: 10px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .status-group .status-entry { transition: background .12s ease; }
+}
+/* ---------- /服薬状況一覧：利用者リスト可読性改善 ---------- */
 </style><link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#286a5d">
 <meta name="apple-mobile-web-app-capable" content="yes">
