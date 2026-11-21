@@ -1631,6 +1631,12 @@ button.rc.mc-rx-paused .resident-name{color:var(--muted)}
 #show-history {
   display: none !important;
 }
+
+/* ホーム画面: 利用者検索・体調／生活記録の重複入口も非表示にする。
+   右上メニュー（#mc-care-drawer-link）からのアクセスは維持する。 */
+#mc-care-open {
+  display: none !important;
+}
 </style><link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#286a5d">
 <meta name="apple-mobile-web-app-capable" content="yes">
