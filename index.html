@@ -1638,39 +1638,27 @@ button.rc.mc-rx-paused .resident-name{color:var(--muted)}
   display: none !important;
 }
 
-/* 利用者記録：スマホで「発生日時」の日時入力が右にはみ出すのを防止。
-   入力値・保存処理は変更せず、日時入力欄だけ幅を調整する。 */
+/* 利用者記録・発生日時：iPhoneのdatetime-local固有の最小幅に依存しない5つの選択欄。 */
 .mc-care-shell #mc-care-form,
-.mc-care-shell #mc-care-form > .mc-care-field {
-  min-width: 0;
-  max-width: 100%;
+.mc-care-shell #mc-care-form > .mc-care-field { min-width:0; max-width:100%; }
+.mc-care-shell .mc-care-datetime-title {display:block;font-weight:700;font-size:14px;margin:11px 0 7px}
+.mc-care-shell .mc-care-date-row,
+.mc-care-shell .mc-care-time-row {
+  display:grid;gap:7px;width:100%;max-width:100%;min-width:0;
 }
-.mc-care-shell #mc-care-at {
-  display: block;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
+.mc-care-shell .mc-care-date-row {grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr)}
+.mc-care-shell .mc-care-time-row {grid-template-columns:repeat(2,minmax(0,1fr));margin-top:9px}
+.mc-care-shell .mc-care-datepart {display:block;margin:0;min-width:0;max-width:100%;font-size:12px;font-weight:700;color:var(--muted)}
+.mc-care-shell .mc-care-datepart select {
+  box-sizing:border-box;display:block;width:100%;max-width:100%;min-width:0;
+  height:45px;min-height:45px;margin-top:4px;
+  padding:7px 20px 7px 9px;border-radius:8px;
+  font-size:16px;line-height:1.3;color:var(--ink);background-color:#fff;
+  text-align:left;-webkit-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='m1 1 5 5 5-5' fill='none' stroke='%2364726c' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 6px center;background-size:10px 7px;
 }
-@media (max-width: 560px) {
-  .mc-care-shell #mc-care-at {
-    inline-size: 100%;
-    max-inline-size: 100%;
-    min-inline-size: 0;
-    padding-inline: 7px;
-    font-size: 16px;
-    letter-spacing: normal;
-  }
-  .mc-care-shell #mc-care-at::-webkit-date-and-time-value,
-  .mc-care-shell #mc-care-at::-webkit-datetime-edit,
-  .mc-care-shell #mc-care-at::-webkit-datetime-edit-fields-wrapper {
-    min-width: 0;
-  }
-  .mc-care-shell #mc-care-at::-webkit-calendar-picker-indicator {
-    margin-inline: 0;
-    padding-inline: 0;
-  }
-}
+.mc-care-shell .mc-care-datepart select:focus-visible {outline:3px solid var(--main);outline-offset:2px}
 </style><link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#286a5d">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2374,6 +2362,39 @@ button.rc.mc-rx-paused .resident-name{color:var(--muted)}
     const x = new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date());
     return x.replace(' ','T');
   }
+  // 日付と時刻を個別の選択欄で入力する。iOS Safariのdatetime-localの横幅問題を回避。
+  function careDateTimePickerHtml(){
+    const now=jstInputNow();
+    const y=Number(now.slice(0,4)),mo=Number(now.slice(5,7)),d=Number(now.slice(8,10));
+    const hour=Number(now.slice(11,13)),minute=Number(now.slice(14,16));
+    const options=(first,last,current,pad)=>Array.from({length:last-first+1},(_,i)=>{
+      const n=first+i,v=pad?String(n).padStart(2,'0'):String(n);
+      return `<option value="${v}"${n===current?' selected':''}>${v}</option>`;
+    }).join('');
+    return `<div class="mc-care-field mc-care-datetime-field">
+      <div class="mc-care-datetime-title" id="mc-care-datetime-title">発生日時</div>
+      <div class="mc-care-date-row" role="group" aria-label="発生日付">
+        <label class="mc-care-datepart" for="mc-care-year">年<select id="mc-care-year" required>${options(y-15,y+2,y,false)}</select></label>
+        <label class="mc-care-datepart" for="mc-care-month">月<select id="mc-care-month" required>${options(1,12,mo,true)}</select></label>
+        <label class="mc-care-datepart" for="mc-care-day">日<select id="mc-care-day" required>${options(1,31,d,true)}</select></label>
+      </div>
+      <div class="mc-care-time-row" role="group" aria-label="発生時刻">
+        <label class="mc-care-datepart" for="mc-care-hour">時<select id="mc-care-hour" required>${options(0,23,hour,true)}</select></label>
+        <label class="mc-care-datepart" for="mc-care-minute">分<select id="mc-care-minute" required>${options(0,59,minute,true)}</select></label>
+      </div>
+    </div>`;
+  }
+  function syncCareDateDays(){
+    const year=Number($('#mc-care-year')?.value),month=Number($('#mc-care-month')?.value);
+    const day=$('#mc-care-day');
+    if(!day||!year||month<1||month>12)return;
+    const old=Number(day.value)||1;
+    const max=new Date(Date.UTC(year,month,0)).getUTCDate();
+    day.innerHTML=Array.from({length:max},(_,i)=>{
+      const v=String(i+1).padStart(2,'0');return `<option value="${v}">${v}</option>`;
+    }).join('');
+    day.value=String(Math.min(old,max)).padStart(2,'0');
+  }
   function formatTime(iso){
     if(!iso) return '日時不明';
     const d=new Date(iso);
@@ -2506,7 +2527,7 @@ button.rc.mc-rx-paused .resident-name{color:var(--muted)}
         </div>
         <form id="mc-care-form">
           <div id="mc-care-fields"></div>
-          <div class="mc-care-field"><label for="mc-care-at">発生日時</label><input type="datetime-local" id="mc-care-at" value="${jstInputNow()}" required></div>
+          ${careDateTimePickerHtml()}
           <div class="mc-care-field"><label for="mc-care-detail">詳しい状況（必要に応じて）</label><textarea id="mc-care-detail" rows="3" maxlength="1000" placeholder="状況や気づいたことを自由に記入"></textarea></div>
           <div class="mc-care-field"><label for="mc-care-response">対応・報告内容（任意）</label><textarea id="mc-care-response" rows="2" maxlength="1000" placeholder="例：看護職員へ報告、安静にして経過観察"></textarea></div>
           <p class="mc-care-muted">記入者：${esc(staff.name)}（ログイン中の職員名をサーバーで確定します）</p>
@@ -2522,6 +2543,9 @@ button.rc.mc-rx-paused .resident-name{color:var(--muted)}
       <button type="button" class="mc-care-back" id="mc-care-more" hidden>さらに過去の記録を見る</button>
       </section>
     </div>`;
+    $('#mc-care-year').addEventListener('change',syncCareDateDays);
+    $('#mc-care-month').addEventListener('change',syncCareDateDays);
+    syncCareDateDays();
     $('#mc-care-to-list').onclick=renderCareList;
     document.querySelectorAll('[data-mc-care-kind]').forEach(b=>b.onclick=()=>selectKind(b.dataset.mcCareKind));
     $('#mc-care-form').onsubmit=saveNote;
@@ -2535,9 +2559,17 @@ button.rc.mc-rx-paused .resident-name{color:var(--muted)}
     const state=$('#mc-care-save-info');
     const kind=selectedKind;
     if(!kind){state.textContent='記録する内容のボタンを選んでください。';return;}
-    const local=$('#mc-care-at')?.value;
+    const year=Number($('#mc-care-year')?.value),month=Number($('#mc-care-month')?.value);
+    const day=Number($('#mc-care-day')?.value),hour=Number($('#mc-care-hour')?.value);
+    const minute=Number($('#mc-care-minute')?.value);
+    const dateCheck=new Date(Date.UTC(year,month-1,day));
+    const validDate=Number.isInteger(year)&&year>=2000&&Number.isInteger(month)&&month>=1&&month<=12&&
+      Number.isInteger(day)&&day>=1&&day<=31&&dateCheck.getUTCFullYear()===year&&
+      dateCheck.getUTCMonth()===month-1&&dateCheck.getUTCDate()===day&&
+      Number.isInteger(hour)&&hour>=0&&hour<=23&&Number.isInteger(minute)&&minute>=0&&minute<=59;
+    const local=validDate?`${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}T${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}`:null;
     const timestamp=local?new Date(local+':00+09:00'):null;
-    if(!timestamp||Number.isNaN(timestamp.getTime())){state.textContent='発生日時を入力してください。';return;}
+    if(!timestamp||Number.isNaN(timestamp.getTime())){state.textContent='発生日時を正しく選択してください。';return;}
     let prefix='';
     if(selectedQuick)prefix=selectedQuick;
     const amount=$('#mc-care-amount');
